@@ -46,21 +46,50 @@ const CosmicDots = () => (
 );
 
 export default function TodoList() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [currentList, setCurrentList] = useState('personal'); // 'work' or 'personal'
+  
   // Load todos from localStorage on initial render
-  const [todos, setTodos] = useState(() => {
+  const [workTodos, setWorkTodos] = useState(() => {
     if (typeof window !== 'undefined') {
-      const savedTodos = localStorage.getItem('cosmicTodos');
-      return savedTodos ? JSON.parse(savedTodos) : [];
+      const saved = localStorage.getItem('cosmicTodosWork');
+      return saved ? JSON.parse(saved) : [];
     }
     return [];
   });
+  
+  const [personalTodos, setPersonalTodos] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cosmicTodosPersonal');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  
   const [inputValue, setInputValue] = useState('');
   const [justCompleted, setJustCompleted] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  // Add custom CSS animations to the document
+  // Get current todos based on selected list
+  const todos = currentList === 'work' ? workTodos : personalTodos;
+  const setTodos = currentList === 'work' ? setWorkTodos : setPersonalTodos;
+
+  // Add ALL styles to the document - including Tailwind-like utilities
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
       @keyframes shootingStar {
         0% {
           transform: translateX(0) translateY(0);
@@ -81,6 +110,15 @@ export default function TodoList() {
         }
       }
       
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      
       @keyframes completionPulse {
         0% {
           transform: scale(1);
@@ -90,6 +128,31 @@ export default function TodoList() {
         }
         100% {
           transform: scale(1);
+        }
+      }
+      
+      @keyframes celebrate {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-500px) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
         }
       }
       
@@ -104,6 +167,18 @@ export default function TodoList() {
       .completion-pulse {
         animation: completionPulse 0.5s ease-out;
       }
+      
+      .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      
+      .celebrate-particle {
+        animation: celebrate 2s ease-out forwards;
+      }
+      
+      .bounce-in {
+        animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -112,9 +187,50 @@ export default function TodoList() {
   // Save todos to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cosmicTodos', JSON.stringify(todos));
+      localStorage.setItem('cosmicTodosWork', JSON.stringify(workTodos));
+    }
+  }, [workTodos]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cosmicTodosPersonal', JSON.stringify(personalTodos));
+    }
+  }, [personalTodos]);
+  
+  // Check for completion and trigger celebration
+  useEffect(() => {
+    const completedCount = todos.filter(t => t.completed).length;
+    const totalCount = todos.length;
+    
+    if (totalCount > 0 && completedCount === totalCount) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
     }
   }, [todos]);
+  
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    console.log('Password submitted:', passwordInput);
+    console.log('Password matches:', passwordInput.trim() === 'fasterprogress1');
+    
+    if (passwordInput.trim() === 'fasterprogress1') {
+      setIsAuthenticated(true);
+      console.log('Authentication successful!');
+    } else {
+      alert(`Incorrect password! You entered: "${passwordInput}". Try: fasterprogress1`);
+      setPasswordInput('');
+    }
+  };
+  
+  const handleUnlockClick = () => {
+    console.log('Unlock button clicked');
+    if (passwordInput.trim() === 'fasterprogress1') {
+      setIsAuthenticated(true);
+    } else {
+      alert(`Incorrect password! You entered: "${passwordInput}". Try: fasterprogress1`);
+      setPasswordInput('');
+    }
+  };
 
   const addTodo = () => {
     if (inputValue.trim()) {
@@ -146,6 +262,68 @@ export default function TodoList() {
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
 
+  // Password screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 flex items-center justify-center px-4">
+        <CosmicDots />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '8s'}}></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '10s'}}></div>
+        
+        <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50 max-w-md w-full relative z-10">
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-4 float-animation">
+              <svg width="80" height="80" viewBox="0 0 100 100" className="opacity-80">
+                <defs>
+                  <linearGradient id="lockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#818CF8', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 1}} />
+                  </linearGradient>
+                </defs>
+                <rect x="30" y="45" width="40" height="35" rx="5" fill="url(#lockGradient)" opacity="0.8"/>
+                <path d="M 35 45 L 35 35 Q 35 20 50 20 Q 65 20 65 35 L 65 45" fill="none" stroke="url(#lockGradient)" strokeWidth="6" opacity="0.8"/>
+                <circle cx="50" cy="62" r="4" fill="white" opacity="0.8"/>
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-2">
+              Enter Password
+            </h1>
+            <p className="text-sm text-gray-500 italic font-light">
+              Protected cosmic space
+            </p>
+          </div>
+          
+          <form onSubmit={handlePasswordSubmit}>
+            <div className="relative mb-4">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Password"
+                className="w-full px-5 py-3 border-2 border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm pr-24"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-purple-600 hover:text-purple-800 font-medium"
+              >
+                {showPassword ? '👁️ Hide' : '👁️ Show'}
+              </button>
+            </div>
+            <button
+              type="submit"
+              onClick={handleUnlockClick}
+              className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white px-7 py-3 rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Unlock
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-8 px-4 relative overflow-hidden">
       <CosmicDots />
@@ -158,7 +336,62 @@ export default function TodoList() {
       <div className="absolute top-1/3 left-10 w-80 h-80 bg-indigo-500 rounded-full filter blur-3xl opacity-30 animate-pulse" style={{animationDuration: '15s', animationDelay: '1s'}}></div>
       
       <div className="max-w-2xl mx-auto relative z-10">
+        {/* Celebration overlay */}
+        {showCelebration && (
+          <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+            <div className="bounce-in text-center">
+              <div className="text-9xl mb-4">🎉</div>
+              <div className="text-5xl font-bold text-white drop-shadow-lg">
+                Amazing!
+              </div>
+              <div className="text-2xl text-white mt-2 drop-shadow-lg">
+                All tasks complete! 🌟
+              </div>
+            </div>
+            
+            {/* Celebration particles */}
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="celebrate-particle absolute"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `50%`,
+                  fontSize: `${Math.random() * 30 + 20}px`,
+                  animationDelay: `${Math.random() * 0.5}s`
+                }}
+              >
+                {['✨', '⭐', '🌟', '💫', '🎊'][Math.floor(Math.random() * 5)]}
+              </div>
+            ))}
+          </div>
+        )}
+        
         <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50">
+          
+          {/* List switcher tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setCurrentList('personal')}
+              className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all ${
+                currentList === 'personal'
+                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              🏠 Personal
+            </button>
+            <button
+              onClick={() => setCurrentList('work')}
+              className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all ${
+                currentList === 'work'
+                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              💼 Work
+            </button>
+          </div>
           
           <div className="text-center mb-8">
             {/* Floating cosmic illustration above title */}
@@ -177,7 +410,7 @@ export default function TodoList() {
             </div>
             
             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-3">
-              Today
+              {currentList === 'work' ? 'Work' : 'Personal'}
             </h1>
             <p className="text-sm text-gray-500 italic font-light">
               A small moment in an infinite universe
@@ -318,13 +551,13 @@ export default function TodoList() {
             {totalCount > 0 && (
               <button
                 onClick={() => {
-                  if (window.confirm('Clear all tasks? This cannot be undone.')) {
+                  if (window.confirm(`Clear all ${currentList} tasks? This cannot be undone.`)) {
                     setTodos([]);
                   }
                 }}
                 className="mt-3 text-xs text-gray-400 hover:text-red-500 underline transition-colors"
               >
-                Clear all tasks
+                Clear all {currentList} tasks
               </button>
             )}
           </div>
