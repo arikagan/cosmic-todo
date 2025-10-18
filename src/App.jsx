@@ -663,7 +663,7 @@ export default function TodoList() {
       >
         <div
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
-            isCompleted ? 'border-emerald-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
+            isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
           } hover:border-purple-400 hover:border-opacity-80 hover:shadow-lg shadow-md rounded-xl transition-all cursor-move hover:bg-opacity-100`}
         >
           <div className="flex items-center gap-2 p-3">
@@ -672,7 +672,7 @@ export default function TodoList() {
               onClick={() => !isCompleted && toggleTodo(todo.id)}
               className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                 isCompleted
-                  ? 'bg-gradient-to-br from-emerald-400 to-teal-500 border-emerald-400'
+                  ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
                   : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
               }`}
             >
@@ -1020,7 +1020,7 @@ export default function TodoList() {
                         {config.todos.length > 0 && (
                           <button
                             onClick={archiveCompleted}
-                            className="flex-1 text-xs px-2 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-2 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
                             title="Archive all completed tasks"
                           >
                             <span>📦</span>
@@ -1032,7 +1032,7 @@ export default function TodoList() {
                         {archivedTasks.length > 0 && (
                           <button
                             onClick={() => setShowArchive(true)}
-                            className="flex-1 text-xs px-2 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-2 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
                             title="View archived tasks"
                           >
                             <span>👁️</span>
@@ -1130,7 +1130,7 @@ export default function TodoList() {
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Check size={12} className="text-emerald-500 flex-shrink-0" />
+                            <Check size={12} className="text-purple-500 flex-shrink-0" />
                             <span className="text-sm text-gray-700 line-through">{task.text}</span>
                           </div>
                           {task.notes && (
