@@ -651,7 +651,10 @@ export default function TodoList() {
         draggable
         onDragStart={(e) => handleDragStart(e, todo)}
         onDragOver={(e) => handleDragOver(e, todo, columnName)}
-        onDrop={() => handleDropOnTask(todo, columnName)}
+        onDrop={(e) => {
+          e.stopPropagation();
+          handleDropOnTask(todo, columnName);
+        }}
         onDragEnd={handleDragEnd}
         className={`${
           isBeingCompleted ? 'completion-pulse' : ''
@@ -669,7 +672,11 @@ export default function TodoList() {
           <div className="flex items-center gap-2 p-3">
             {/* Smaller, more elegant checkbox */}
             <button
-              onClick={() => !isCompleted && toggleTodo(todo.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isCompleted) toggleTodo(todo.id);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
               className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                 isCompleted
                   ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
@@ -702,6 +709,7 @@ export default function TodoList() {
                     setEditingTitle(null);
                   }
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="flex-1 px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm text-gray-800"
                 autoFocus
               />
@@ -710,12 +718,14 @@ export default function TodoList() {
                 className={`flex-1 text-sm cursor-pointer ${
                   isCompleted ? 'line-through text-gray-400' : 'text-gray-800 hover:text-purple-600'
                 }`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (!isCompleted) {
                     setEditingTitle(todo.id);
                     setTitleInput(todo.text);
                   }
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
               >
                 {todo.text}
               </span>
@@ -732,7 +742,11 @@ export default function TodoList() {
 
             {/* Delete button */}
             <button
-              onClick={() => deleteTodo(todo.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteTodo(todo.id);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
               className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors"
             >
               <Trash2 size={14} />
