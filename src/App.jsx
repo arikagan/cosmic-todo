@@ -662,9 +662,9 @@ export default function TodoList() {
         } mb-2`}
       >
         <div
-          className={`bg-white border-2 ${
-            isCompleted ? 'border-emerald-300' : 'border-purple-200'
-          } hover:border-purple-300 hover:shadow-md shadow-sm rounded-xl transition-all cursor-move`}
+          className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
+            isCompleted ? 'border-emerald-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
+          } hover:border-purple-400 hover:border-opacity-80 hover:shadow-lg shadow-md rounded-xl transition-all cursor-move hover:bg-opacity-100`}
         >
           <div className="flex items-center gap-2 p-3">
             {/* Smaller, more elegant checkbox */}
@@ -919,29 +919,29 @@ export default function TodoList() {
           </div>
         )}
 
-        <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50">
+        <div className="bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-purple-300 border-opacity-30">
 
           <div className="text-center mb-6">
             {/* Title with inline floating planet */}
             <div className="flex items-center justify-center gap-3 mb-2">
               <div className="float-animation">
-                <svg width="50" height="50" viewBox="0 0 100 100" className="opacity-80">
+                <svg width="50" height="50" viewBox="0 0 100 100" className="opacity-90">
                   <defs>
                     <linearGradient id="planetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" style={{stopColor: '#818CF8', stopOpacity: 1}} />
                       <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 1}} />
                     </linearGradient>
                   </defs>
-                  <circle cx="50" cy="50" r="25" fill="url(#planetGradient)" opacity="0.8"/>
-                  <ellipse cx="50" cy="50" rx="45" ry="10" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.6"/>
-                  <circle cx="30" cy="35" r="3" fill="white" opacity="0.4"/>
+                  <circle cx="50" cy="50" r="25" fill="url(#planetGradient)" opacity="0.9"/>
+                  <ellipse cx="50" cy="50" rx="45" ry="10" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.8"/>
+                  <circle cx="30" cy="35" r="3" fill="white" opacity="0.6"/>
                 </svg>
               </div>
-              <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+              <h1 className="text-4xl font-bold text-white drop-shadow-lg">
                 Cosmic Tasks
               </h1>
             </div>
-            <p className="text-sm text-gray-500 italic font-light">
+            <p className="text-sm text-purple-100 italic font-light drop-shadow">
               A small moment in an infinite universe
             </p>
           </div>
@@ -953,7 +953,7 @@ export default function TodoList() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What matters right now?"
-              className="flex-1 px-4 py-2 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm text-sm"
+              className="flex-1 px-4 py-2 border-2 border-purple-300 border-opacity-40 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white bg-opacity-90 backdrop-blur-sm shadow-lg text-sm placeholder-purple-300"
             />
             <button
               onClick={addTodo}
@@ -969,10 +969,10 @@ export default function TodoList() {
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
-                onDragOver={handleDragOver}
+                onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDropOnColumn(config.name)}
-                className={`bg-gradient-to-b ${config.gradient} border-2 ${config.border} rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all ${
-                  draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-300 ring-opacity-50' : ''
+                className={`bg-white bg-opacity-30 backdrop-blur-md border-2 ${config.border} border-opacity-50 rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-xl ${
+                  draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-400 ring-opacity-60 bg-opacity-40' : ''
                 }`}
               >
                 {editingColumnTitle === config.name ? (
@@ -1003,14 +1003,14 @@ export default function TodoList() {
                 ) : (
                   <div className="mb-3">
                     <h2
-                      className="text-sm font-bold text-gray-700 flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
+                      className="text-sm font-bold text-white drop-shadow-md flex items-center gap-2 cursor-pointer hover:text-purple-200 transition-colors"
                       onClick={() => {
                         setEditingColumnTitle(config.name);
                         setColumnTitleInput(config.title);
                       }}
                     >
                       <span>{config.title}</span>
-                      <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
+                      <span className="text-xs font-normal text-purple-200">({config.todos.length})</span>
                     </h2>
 
                     {/* Archive controls - only show for completed column */}
@@ -1046,7 +1046,7 @@ export default function TodoList() {
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
                   {config.todos.length === 0 ? (
-                    <div className="text-center py-12 text-xs text-gray-400 italic">
+                    <div className="text-center py-12 text-xs text-purple-200 italic drop-shadow">
                       Drop tasks here
                     </div>
                   ) : (
@@ -1058,25 +1058,25 @@ export default function TodoList() {
           </div>
 
           {todos.length > 0 && (
-            <div className="mt-8 pt-6 border-t-2 border-purple-100">
+            <div className="mt-8 pt-6 border-t-2 border-purple-300 border-opacity-30">
               <div className="flex items-center justify-center gap-8">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                  <div className="text-2xl font-bold text-white drop-shadow-lg">
                     {completedTodos.length}
                   </div>
-                  <div className="text-xs text-gray-500">Completed</div>
+                  <div className="text-xs text-purple-200">Completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                  <div className="text-2xl font-bold text-white drop-shadow-lg">
                     {todos.length - completedTodos.length}
                   </div>
-                  <div className="text-xs text-gray-500">In Progress</div>
+                  <div className="text-xs text-purple-200">In Progress</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                  <div className="text-2xl font-bold text-white drop-shadow-lg">
                     {todos.length}
                   </div>
-                  <div className="text-xs text-gray-500">Total</div>
+                  <div className="text-xs text-purple-200">Total</div>
                 </div>
 
                 {completedTodos.length === todos.length && todos.length > 0 && (
@@ -1089,7 +1089,7 @@ export default function TodoList() {
           )}
 
           <div className="mt-8 text-center">
-            <p className="text-xs text-gray-400 italic font-light">
+            <p className="text-xs text-purple-200 italic font-light drop-shadow">
               {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click to edit"}
             </p>
           </div>
