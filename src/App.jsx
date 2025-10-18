@@ -831,10 +831,10 @@ export default function TodoList() {
                   setEditingNote(todo.id);
                   setNoteInput('');
                 }}
-                className="text-xs text-gray-400 hover:text-purple-600 transition-colors flex items-center gap-1"
+                className="text-xs text-gray-300 hover:text-purple-400 transition-colors flex items-center gap-1"
+                title="Add note"
               >
-                <Plus size={12} />
-                Add note
+                <FileText size={12} className="opacity-60" />
               </button>
             </div>
           )}
