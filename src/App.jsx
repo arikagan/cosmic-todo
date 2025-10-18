@@ -669,175 +669,184 @@ export default function TodoList() {
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
           } hover:border-purple-400 hover:border-opacity-80 hover:shadow-lg shadow-md rounded-xl transition-all cursor-move hover:bg-opacity-100`}
         >
-          <div className="flex items-center gap-2 p-3">
-            {/* Smaller, more elegant checkbox */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isCompleted) toggleTodo(todo.id);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                isCompleted
-                  ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
-                  : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
-              }`}
-            >
-              {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
-            </button>
-
-            {/* Editable title */}
-            {editingTitle === todo.id ? (
-              <input
-                type="text"
-                value={titleInput}
-                onChange={(e) => setTitleInput(e.target.value)}
-                onBlur={() => {
-                  if (titleInput.trim()) {
-                    updateTitle(todo.id, titleInput);
-                  }
-                  setEditingTitle(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    if (titleInput.trim()) {
-                      updateTitle(todo.id, titleInput);
-                    }
-                    setEditingTitle(null);
-                  }
-                  if (e.key === 'Escape') {
-                    setEditingTitle(null);
-                  }
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                className="flex-1 px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm text-gray-800"
-                autoFocus
-              />
-            ) : (
-              <span
-                className={`flex-1 text-sm cursor-pointer ${
-                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800 hover:text-purple-600'
-                }`}
+          {/* Main content area */}
+          <div className="p-3">
+            {/* Top row: checkbox + title + actions */}
+            <div className="flex items-start gap-2.5">
+              {/* Checkbox */}
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isCompleted) {
-                    setEditingTitle(todo.id);
-                    setTitleInput(todo.text);
-                  }
+                  if (!isCompleted) toggleTodo(todo.id);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
+                className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all mt-0.5 ${
+                  isCompleted
+                    ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
+                    : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+                }`}
               >
-                {todo.text}
-              </span>
-            )}
-
-            {isBeingCompleted && (
-              <span className="text-xl">✨</span>
-            )}
-
-            {/* Notes indicator - only show if has notes */}
-            {todo.notes && !editingNote && (
-              <FileText size={12} className="flex-shrink-0 text-purple-400" />
-            )}
-
-            {/* Delete button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteTodo(todo.id);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-
-          {/* Inline notes for short notes */}
-          {todo.notes && !editingNote && todo.notes.length <= 100 && (
-            <div
-              className="px-3 pb-2 text-xs text-gray-500 cursor-pointer hover:text-purple-600 transition-colors"
-              onClick={() => {
-                setEditingNote(todo.id);
-                setNoteInput(todo.notes);
-              }}
-              title="Click to edit"
-            >
-              {linkifyText(todo.notes)}
-            </div>
-          )}
-
-          {/* Expandable notes for longer notes */}
-          {todo.notes && !editingNote && todo.notes.length > 100 && (
-            <div className="px-3 pb-2">
-              <button
-                onClick={() => setExpandedTask(expandedTask === todo.id ? null : todo.id)}
-                className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
-              >
-                <FileText size={12} />
-                {expandedTask === todo.id ? 'Hide' : 'Show'} notes
+                {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
               </button>
-              {expandedTask === todo.id && (
-                <div
-                  className="mt-2 text-xs text-gray-600 whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2 rounded cursor-pointer hover:bg-opacity-70 transition-all"
-                  onClick={() => {
-                    setEditingNote(todo.id);
-                    setNoteInput(todo.notes);
-                  }}
-                  title="Click to edit"
-                >
-                  {linkifyText(todo.notes)}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Note editing mode */}
-          {editingNote === todo.id && (
-            <div className="px-3 pb-3 pt-2">
-              <textarea
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                onBlur={() => {
-                  updateNotes(todo.id, noteInput);
-                  setEditingNote(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setEditingNote(null);
-                    setNoteInput('');
-                  }
-                  if (e.key === 'Enter' && e.metaKey) {
-                    updateNotes(todo.id, noteInput);
-                    setEditingNote(null);
-                  }
-                }}
-                placeholder="Add notes, links, or context... (⌘+Enter to save, Esc to cancel)"
-                className="w-full px-3 py-2 border border-purple-300 border-opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs resize-none bg-white bg-opacity-95"
-                rows="3"
-                autoFocus
-              />
-              <div className="text-xs text-gray-400 mt-1">
-                ⌘+Enter to save • Esc to cancel
+              {/* Title */}
+              <div className="flex-1 min-w-0">
+                {editingTitle === todo.id ? (
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    onBlur={() => {
+                      if (titleInput.trim()) {
+                        updateTitle(todo.id, titleInput);
+                      }
+                      setEditingTitle(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (titleInput.trim()) {
+                          updateTitle(todo.id, titleInput);
+                        }
+                        setEditingTitle(null);
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingTitle(null);
+                      }
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="w-full px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm font-semibold text-gray-800"
+                    autoFocus
+                  />
+                ) : (
+                  <div
+                    className={`text-sm font-semibold leading-snug cursor-pointer ${
+                      isCompleted ? 'line-through text-gray-400' : 'text-gray-800 hover:text-purple-600'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isCompleted) {
+                        setEditingTitle(todo.id);
+                        setTitleInput(todo.text);
+                      }
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    {todo.text}
+                  </div>
+                )}
+              </div>
+
+              {/* Action icons */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {isBeingCompleted && (
+                  <span className="text-lg">✨</span>
+                )}
+
+                {/* Note icon or add note button */}
+                {todo.notes && !editingNote ? (
+                  <FileText size={14} className="text-purple-400 opacity-70" />
+                ) : !editingNote ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingNote(todo.id);
+                      setNoteInput('');
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="text-gray-300 hover:text-purple-400 transition-colors"
+                    title="Add note"
+                  >
+                    <FileText size={14} className="opacity-50" />
+                  </button>
+                ) : null}
+
+                {/* Delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteTodo(todo.id);
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="text-gray-300 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
-          )}
 
-          {/* Add note button - only show when no notes */}
-          {!todo.notes && !editingNote && (
-            <div className="px-3 pb-2">
-              <button
-                onClick={() => {
-                  setEditingNote(todo.id);
-                  setNoteInput('');
-                }}
-                className="text-xs text-gray-300 hover:text-purple-400 transition-colors flex items-center gap-1"
-                title="Add note"
-              >
-                <FileText size={12} className="opacity-60" />
-              </button>
-            </div>
-          )}
+            {/* Notes section - below the title with clear separation */}
+            {todo.notes && !editingNote && (
+              <div className="mt-2.5 ml-7 mr-0">
+                {todo.notes.length <= 100 ? (
+                  // Short notes: show inline
+                  <div
+                    className="text-xs text-gray-600 leading-relaxed cursor-pointer hover:text-purple-600 transition-colors"
+                    onClick={() => {
+                      setEditingNote(todo.id);
+                      setNoteInput(todo.notes);
+                    }}
+                    title="Click to edit"
+                  >
+                    {linkifyText(todo.notes)}
+                  </div>
+                ) : (
+                  // Long notes: expandable
+                  <div>
+                    <button
+                      onClick={() => setExpandedTask(expandedTask === todo.id ? null : todo.id)}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+                    >
+                      <FileText size={11} />
+                      {expandedTask === todo.id ? 'Hide' : 'Show'} notes
+                    </button>
+                    {expandedTask === todo.id && (
+                      <div
+                        className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2.5 rounded cursor-pointer hover:bg-opacity-70 transition-all"
+                        onClick={() => {
+                          setEditingNote(todo.id);
+                          setNoteInput(todo.notes);
+                        }}
+                        title="Click to edit"
+                      >
+                        {linkifyText(todo.notes)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Note editing mode */}
+            {editingNote === todo.id && (
+              <div className="mt-2.5 ml-7 mr-0">
+                <textarea
+                  value={noteInput}
+                  onChange={(e) => setNoteInput(e.target.value)}
+                  onBlur={() => {
+                    updateNotes(todo.id, noteInput);
+                    setEditingNote(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setEditingNote(null);
+                      setNoteInput('');
+                    }
+                    if (e.key === 'Enter' && e.metaKey) {
+                      updateNotes(todo.id, noteInput);
+                      setEditingNote(null);
+                    }
+                  }}
+                  placeholder="Add notes, links, or context... (⌘+Enter to save, Esc to cancel)"
+                  className="w-full px-2.5 py-2 border border-purple-300 border-opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs resize-none bg-white bg-opacity-95 leading-relaxed"
+                  rows="3"
+                  autoFocus
+                />
+                <div className="text-xs text-gray-400 mt-1.5">
+                  ⌘+Enter to save • Esc to cancel
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1047,7 +1056,7 @@ export default function TodoList() {
                         {config.todos.length > 0 && (
                           <button
                             onClick={archiveCompleted}
-                            className="flex-1 text-xs px-2 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-2 py-1.5 bg-purple-500 bg-opacity-20 text-purple-100 rounded-lg hover:bg-opacity-30 transition-all border border-purple-400 border-opacity-40 hover:border-opacity-60 flex items-center justify-center gap-1"
                             title="Archive all completed tasks"
                           >
                             <span>📦</span>
@@ -1059,7 +1068,7 @@ export default function TodoList() {
                         {archivedTasks.length > 0 && (
                           <button
                             onClick={() => setShowArchive(true)}
-                            className="flex-1 text-xs px-2 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-2 py-1.5 bg-indigo-500 bg-opacity-20 text-purple-100 rounded-lg hover:bg-opacity-30 transition-all border border-indigo-400 border-opacity-40 hover:border-opacity-60 flex items-center justify-center gap-1"
                             title="View archived tasks"
                           >
                             <span>👁️</span>
