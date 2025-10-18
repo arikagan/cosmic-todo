@@ -249,6 +249,25 @@ export default function TodoList() {
       .bounce-in {
         animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
+
+      /* Custom scrollbar styles */
+      .overflow-y-auto::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .overflow-y-auto::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+      }
+
+      .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.3);
+        border-radius: 10px;
+      }
+
+      .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 92, 246, 0.5);
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -781,25 +800,26 @@ export default function TodoList() {
 
         <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50">
 
-          <div className="text-center mb-8">
-            {/* Floating cosmic illustration above title */}
-            <div className="flex justify-center mb-4 float-animation">
-              <svg width="60" height="60" viewBox="0 0 100 100" className="opacity-80">
-                <defs>
-                  <linearGradient id="planetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{stopColor: '#818CF8', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 1}} />
-                  </linearGradient>
-                </defs>
-                <circle cx="50" cy="50" r="25" fill="url(#planetGradient)" opacity="0.8"/>
-                <ellipse cx="50" cy="50" rx="45" ry="10" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.6"/>
-                <circle cx="30" cy="35" r="3" fill="white" opacity="0.4"/>
-              </svg>
+          <div className="text-center mb-6">
+            {/* Title with inline floating planet */}
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="float-animation">
+                <svg width="50" height="50" viewBox="0 0 100 100" className="opacity-80">
+                  <defs>
+                    <linearGradient id="planetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{stopColor: '#818CF8', stopOpacity: 1}} />
+                      <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 1}} />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="50" cy="50" r="25" fill="url(#planetGradient)" opacity="0.8"/>
+                  <ellipse cx="50" cy="50" rx="45" ry="10" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.6"/>
+                  <circle cx="30" cy="35" r="3" fill="white" opacity="0.4"/>
+                </svg>
+              </div>
+              <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                Cosmic Tasks
+              </h1>
             </div>
-
-            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-3">
-              Cosmic Tasks
-            </h1>
             <p className="text-sm text-gray-500 italic font-light">
               A small moment in an infinite universe
             </p>
@@ -830,7 +850,7 @@ export default function TodoList() {
                 key={config.name}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDropOnColumn(config.name)}
-                className={`bg-gradient-to-b ${config.gradient} border-2 ${config.border} rounded-2xl p-4 min-h-[400px] transition-all ${
+                className={`bg-gradient-to-b ${config.gradient} border-2 ${config.border} rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all ${
                   draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-300 ring-opacity-50' : ''
                 }`}
               >
@@ -872,13 +892,15 @@ export default function TodoList() {
                   </h2>
                 )}
 
-                {config.todos.length === 0 ? (
-                  <div className="text-center py-12 text-xs text-gray-400 italic">
-                    Drop tasks here
-                  </div>
-                ) : (
-                  config.todos.map((todo) => renderTodo(todo, config.name))
-                )}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
+                  {config.todos.length === 0 ? (
+                    <div className="text-center py-12 text-xs text-gray-400 italic">
+                      Drop tasks here
+                    </div>
+                  ) : (
+                    config.todos.map((todo) => renderTodo(todo, config.name))
+                  )}
+                </div>
               </div>
             ))}
           </div>
