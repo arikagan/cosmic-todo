@@ -123,6 +123,7 @@ export default function TodoList() {
   const [titleInput, setTitleInput] = useState('');
   const [editingColumnTitle, setEditingColumnTitle] = useState(null);
   const [columnTitleInput, setColumnTitleInput] = useState('');
+  const [showArchive, setShowArchive] = useState(false);
 
   // Column titles stored in localStorage
   const [columnTitles, setColumnTitles] = useState(() => {
@@ -141,6 +142,15 @@ export default function TodoList() {
       waiting: '⏳ Waiting',
       completed: '✅ Completed'
     };
+  });
+
+  // Archived tasks stored in localStorage
+  const [archivedTasks, setArchivedTasks] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cosmicArchivedTasks');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
   });
 
   // Add ALL styles to the document - including Tailwind-like utilities
@@ -286,6 +296,57 @@ export default function TodoList() {
       localStorage.setItem('cosmicColumnTitles', JSON.stringify(columnTitles));
     }
   }, [columnTitles]);
+
+  // Save archived tasks to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cosmicArchivedTasks', JSON.stringify(archivedTasks));
+      console.log('📦 Archived tasks saved:', archivedTasks.length, 'tasks in archive');
+    }
+  }, [archivedTasks]);
+
+  // Auto-archive on Mondays - check and archive completed tasks from last week
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const lastArchiveDate = localStorage.getItem('cosmicLastArchiveDate');
+      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      // Check if it's Monday (dayOfWeek === 1) and we haven't archived yet today
+      if (dayOfWeek === 1 && lastArchiveDate !== todayStr) {
+        console.log('🗓️ It\'s Monday! Checking for tasks to auto-archive...');
+
+        const completedTasks = todos.filter(t => t.column === 'completed');
+
+        if (completedTasks.length > 0) {
+          console.log(`📦 Auto-archiving ${completedTasks.length} completed tasks from last week`);
+
+          // Archive completed tasks
+          const tasksToArchive = completedTasks.map(task => ({
+            ...task,
+            archivedAt: new Date().toISOString(),
+            archivedReason: 'auto-monday'
+          }));
+
+          // Add to archive
+          setArchivedTasks(prev => [...prev, ...tasksToArchive]);
+
+          // Remove from active todos
+          setTodos(prev => prev.filter(t => t.column !== 'completed'));
+
+          // Update last archive date
+          localStorage.setItem('cosmicLastArchiveDate', todayStr);
+
+          console.log('✅ Auto-archive complete!');
+        } else {
+          console.log('ℹ️ No completed tasks to archive');
+          // Still update the date so we don't check again today
+          localStorage.setItem('cosmicLastArchiveDate', todayStr);
+        }
+      }
+    }
+  }, [todos]); // Run when todos change (including on initial load)
 
   // Check for completion and trigger celebration
   useEffect(() => {
@@ -499,6 +560,66 @@ export default function TodoList() {
       ...columnTitles,
       [columnName]: newTitle
     });
+  };
+
+  // Manual archive - move all completed tasks to archive
+  const archiveCompleted = () => {
+    const completedTasks = todos.filter(t => t.column === 'completed');
+
+    if (completedTasks.length === 0) {
+      alert('No completed tasks to archive');
+      return;
+    }
+
+    // Confirm before archiving
+    const confirmArchive = window.confirm(
+      `Archive ${completedTasks.length} completed task${completedTasks.length === 1 ? '' : 's'}?\n\n` +
+      `Tasks will be safely stored in the archive and can be viewed anytime.`
+    );
+
+    if (!confirmArchive) {
+      console.log('❌ Archive cancelled by user');
+      return;
+    }
+
+    console.log(`📦 Manually archiving ${completedTasks.length} completed tasks`);
+
+    // Archive completed tasks with metadata
+    const tasksToArchive = completedTasks.map(task => ({
+      ...task,
+      archivedAt: new Date().toISOString(),
+      archivedReason: 'manual'
+    }));
+
+    // Add to archive
+    setArchivedTasks(prev => [...prev, ...tasksToArchive]);
+
+    // Remove from active todos (NOT delete - they're in archive!)
+    setTodos(prev => prev.filter(t => t.column !== 'completed'));
+
+    console.log('✅ Archive successful! Tasks safely stored.');
+    alert(`✅ Archived ${completedTasks.length} task${completedTasks.length === 1 ? '' : 's'} successfully!`);
+  };
+
+  // Restore a task from archive back to completed
+  const restoreFromArchive = (taskId) => {
+    const taskToRestore = archivedTasks.find(t => t.id === taskId);
+
+    if (!taskToRestore) {
+      console.error('❌ Task not found in archive');
+      return;
+    }
+
+    console.log('♻️ Restoring task from archive:', taskToRestore.text);
+
+    // Remove archived metadata and add back to todos
+    const { archivedAt, archivedReason, ...cleanTask } = taskToRestore;
+    setTodos(prev => [...prev, cleanTask]);
+
+    // Remove from archive
+    setArchivedTasks(prev => prev.filter(t => t.id !== taskId));
+
+    console.log('✅ Task restored successfully');
   };
 
   const handleKeyDown = (e) => {
@@ -880,16 +1001,29 @@ export default function TodoList() {
                     autoFocus
                   />
                 ) : (
-                  <h2
-                    className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
-                    onClick={() => {
-                      setEditingColumnTitle(config.name);
-                      setColumnTitleInput(config.title);
-                    }}
-                  >
-                    <span>{config.title}</span>
-                    <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
-                  </h2>
+                  <div className="mb-3">
+                    <h2
+                      className="text-sm font-bold text-gray-700 flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
+                      onClick={() => {
+                        setEditingColumnTitle(config.name);
+                        setColumnTitleInput(config.title);
+                      }}
+                    >
+                      <span>{config.title}</span>
+                      <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
+                    </h2>
+
+                    {/* Archive button - only show for completed column */}
+                    {config.name === 'completed' && config.todos.length > 0 && (
+                      <button
+                        onClick={archiveCompleted}
+                        className="mt-2 w-full text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
+                        title="Archive all completed tasks"
+                      >
+                        📦 Archive All ({config.todos.length})
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
@@ -940,8 +1074,91 @@ export default function TodoList() {
             <p className="text-xs text-gray-400 italic font-light">
               {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click to edit"}
             </p>
+
+            {/* View Archive button */}
+            {archivedTasks.length > 0 && (
+              <button
+                onClick={() => setShowArchive(true)}
+                className="mt-3 text-xs px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                📦 View Archive ({archivedTasks.length} task{archivedTasks.length === 1 ? '' : 's'})
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Archive Modal */}
+        {showArchive && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                    📦 Archive
+                  </h2>
+                  <button
+                    onClick={() => setShowArchive(false)}
+                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  {archivedTasks.length} archived task{archivedTasks.length === 1 ? '' : 's'}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {archivedTasks.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    No archived tasks yet
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {archivedTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Check size={12} className="text-emerald-500 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 line-through">{task.text}</span>
+                          </div>
+                          {task.notes && (
+                            <div className="text-xs text-gray-500 ml-5 mt-1 bg-white p-2 rounded border border-gray-100">
+                              {task.notes}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-400 ml-5 mt-1">
+                            Archived: {new Date(task.archivedAt).toLocaleDateString()}
+                            {task.archivedReason === 'auto-monday' && ' (auto-Monday)'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => restoreFromArchive(task.id)}
+                          className="flex-shrink-0 text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors"
+                          title="Restore to completed"
+                        >
+                          ♻️ Restore
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setShowArchive(false)}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
