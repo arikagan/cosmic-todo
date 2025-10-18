@@ -53,40 +53,56 @@ export default function TodoList() {
   // Load todos from localStorage on initial render with migration from old format
   const [todos, setTodos] = useState(() => {
     if (typeof window !== 'undefined') {
-      // Check if we already have data in the new format
-      const saved = localStorage.getItem('cosmicTodos');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-
-      // Migration: Check for old data from work/personal tabs
+      // Migration: Always check for old data from work/personal tabs, even if cosmicTodos exists
+      // This handles the edge case where a partial migration occurred
       const oldWorkTodos = localStorage.getItem('cosmicTodosWork');
       const oldPersonalTodos = localStorage.getItem('cosmicTodosPersonal');
+      const currentTodos = localStorage.getItem('cosmicTodos');
 
+      // If old data exists, we need to migrate/merge it
       if (oldWorkTodos || oldPersonalTodos) {
-        console.log('Migrating old todos to new format...');
+        console.log('Found old todo data - performing migration...');
 
         const workTasks = oldWorkTodos ? JSON.parse(oldWorkTodos) : [];
         const personalTasks = oldPersonalTodos ? JSON.parse(oldPersonalTodos) : [];
+        const existingTasks = currentTodos ? JSON.parse(currentTodos) : [];
 
-        // Merge both lists and convert to new format with column property
-        const migratedTodos = [...workTasks, ...personalTasks].map(todo => ({
+        console.log(`Found: ${workTasks.length} work tasks, ${personalTasks.length} personal tasks, ${existingTasks.length} current tasks`);
+
+        // Merge all three sources
+        const allTasks = [...existingTasks, ...workTasks, ...personalTasks];
+
+        // Remove duplicates by ID (keep first occurrence)
+        const uniqueTasks = allTasks.reduce((acc, todo) => {
+          if (!acc.find(t => t.id === todo.id)) {
+            acc.push(todo);
+          }
+          return acc;
+        }, []);
+
+        // Convert to new format with column property
+        const migratedTodos = uniqueTasks.map(todo => ({
           ...todo,
-          // Assign column based on completion status
-          // Old format used 'completed' boolean, new format uses column + completed status was implied
-          column: todo.completed ? 'completed' : 'inbox'
+          // Add column property if it doesn't exist
+          // Use completed status to determine column
+          column: todo.column || (todo.completed ? 'completed' : 'inbox')
         }));
 
-        // Save migrated data to new key
+        // Save migrated data
         localStorage.setItem('cosmicTodos', JSON.stringify(migratedTodos));
 
         // Clean up old keys
         localStorage.removeItem('cosmicTodosWork');
         localStorage.removeItem('cosmicTodosPersonal');
 
-        console.log(`Migrated ${migratedTodos.length} todos successfully!`);
+        console.log(`✅ Migration complete! Recovered ${migratedTodos.length} todos (${uniqueTasks.length - allTasks.length} duplicates removed)`);
 
         return migratedTodos;
+      }
+
+      // No old data, just return current data
+      if (currentTodos) {
+        return JSON.parse(currentTodos);
       }
 
       return [];
