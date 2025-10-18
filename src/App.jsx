@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check, Edit2 } from 'lucide-react';
 
 // Shooting stars
 const ShootingStars = () => (
@@ -20,7 +20,7 @@ const CosmicDots = () => (
         <div className="absolute top-8 left-2 w-1 h-1 bg-yellow-200 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
     </div>
-    
+
     {/* Regular stars scattered */}
     <div className="absolute top-10 left-10 w-2 h-2 bg-purple-300 rounded-full animate-pulse"></div>
     <div className="absolute top-20 right-20 w-3 h-3 bg-blue-300 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
@@ -36,7 +36,7 @@ const CosmicDots = () => (
     <div className="absolute bottom-60 right-40 w-1.5 h-1.5 bg-cyan-200 rounded-full animate-pulse" style={{animationDelay: '1.8s'}}></div>
     <div className="absolute top-1/4 left-40 w-2.5 h-2.5 bg-blue-300 rounded-full animate-pulse" style={{animationDelay: '2.2s'}}></div>
     <div className="absolute bottom-1/4 right-60 w-2 h-2 bg-pink-300 rounded-full animate-pulse" style={{animationDelay: '1.4s'}}></div>
-    
+
     {/* More distant tiny stars */}
     <div className="absolute top-32 left-60 w-1 h-1 bg-white bg-opacity-40 rounded-full"></div>
     <div className="absolute top-48 right-80 w-1 h-1 bg-white bg-opacity-30 rounded-full"></div>
@@ -49,37 +49,26 @@ export default function TodoList() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [currentList, setCurrentList] = useState('personal'); // 'work' or 'personal'
-  
+
   // Load todos from localStorage on initial render
-  const [workTodos, setWorkTodos] = useState(() => {
+  const [todos, setTodos] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cosmicTodosWork');
+      const saved = localStorage.getItem('cosmicTodos');
       return saved ? JSON.parse(saved) : [];
     }
     return [];
   });
-  
-  const [personalTodos, setPersonalTodos] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cosmicTodosPersonal');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-  
+
   const [inputValue, setInputValue] = useState('');
   const [justCompleted, setJustCompleted] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [draggedFromColumn, setDraggedFromColumn] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [noteInput, setNoteInput] = useState('');
-  const [showCompleted, setShowCompleted] = useState(true);
-
-  // Get current todos based on selected list
-  const todos = currentList === 'work' ? workTodos : personalTodos;
-  const setTodos = currentList === 'work' ? setWorkTodos : setPersonalTodos;
+  const [editingTitle, setEditingTitle] = useState(null);
+  const [titleInput, setTitleInput] = useState('');
 
   // Add ALL styles to the document - including Tailwind-like utilities
   useEffect(() => {
@@ -90,11 +79,11 @@ export default function TodoList() {
         padding: 0;
         box-sizing: border-box;
       }
-      
+
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
-      
+
       @keyframes shootingStar {
         0% {
           transform: translateX(0) translateY(0);
@@ -105,7 +94,7 @@ export default function TodoList() {
           opacity: 0;
         }
       }
-      
+
       @keyframes float {
         0%, 100% {
           transform: translateY(0px);
@@ -114,7 +103,7 @@ export default function TodoList() {
           transform: translateY(-20px);
         }
       }
-      
+
       @keyframes pulse {
         0%, 100% {
           opacity: 1;
@@ -123,7 +112,7 @@ export default function TodoList() {
           opacity: 0.5;
         }
       }
-      
+
       @keyframes completionPulse {
         0% {
           transform: scale(1);
@@ -138,16 +127,7 @@ export default function TodoList() {
           transform: scale(1);
         }
       }
-      
-      @keyframes shine {
-        0% {
-          left: -100%;
-        }
-        100% {
-          left: 100%;
-        }
-      }
-      
+
       @keyframes celebrate {
         0% {
           transform: translateY(0) rotate(0deg);
@@ -158,7 +138,7 @@ export default function TodoList() {
           opacity: 0;
         }
       }
-      
+
       @keyframes bounceIn {
         0% {
           transform: scale(0);
@@ -172,27 +152,27 @@ export default function TodoList() {
           opacity: 1;
         }
       }
-      
+
       .shooting-star {
         animation: shootingStar 3s linear infinite;
       }
-      
+
       .float-animation {
         animation: float 6s ease-in-out infinite;
       }
-      
+
       .completion-pulse {
         animation: completionPulse 0.5s ease-out;
       }
-      
+
       .animate-pulse {
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
-      
+
       .celebrate-particle {
         animation: celebrate 2s ease-out forwards;
       }
-      
+
       .bounce-in {
         animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
@@ -204,59 +184,48 @@ export default function TodoList() {
   // Save todos to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cosmicTodosWork', JSON.stringify(workTodos));
+      localStorage.setItem('cosmicTodos', JSON.stringify(todos));
     }
-  }, [workTodos]);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cosmicTodosPersonal', JSON.stringify(personalTodos));
-    }
-  }, [personalTodos]);
-  
+  }, [todos]);
+
   // Check for completion and trigger celebration
   useEffect(() => {
-    const completedCount = todos.filter(t => t.completed).length;
+    const completedCount = todos.filter(t => t.column === 'completed').length;
     const totalCount = todos.length;
-    
+
     if (totalCount > 0 && completedCount === totalCount) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2000);
     }
   }, [todos]);
-  
+
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
-    console.log('Password submitted:', passwordInput);
-    console.log('Password matches:', passwordInput.trim() === 'fasterprogress1');
-    
     if (passwordInput.trim() === 'fasterprogress1') {
       setIsAuthenticated(true);
-      console.log('Authentication successful!');
     } else {
-      alert(`Incorrect password! You entered: "${passwordInput}". Try: fasterprogress1`);
+      alert('Incorrect password!');
       setPasswordInput('');
     }
   };
-  
+
   const handleUnlockClick = () => {
-    console.log('Unlock button clicked');
     if (passwordInput.trim() === 'fasterprogress1') {
       setIsAuthenticated(true);
     } else {
-      alert(`Incorrect password! You entered: "${passwordInput}". Try: fasterprogress1`);
+      alert('Incorrect password!');
       setPasswordInput('');
     }
   };
 
   const addTodo = () => {
     if (inputValue.trim()) {
-      setTodos([...todos, { 
-        id: Date.now(), 
-        text: inputValue, 
-        completed: false,
+      setTodos([...todos, {
+        id: Date.now(),
+        text: inputValue,
+        column: 'inbox', // New tasks start in inbox
         notes: '',
-        order: todos.length 
+        order: todos.length
       }]);
       setInputValue('');
     }
@@ -264,40 +233,41 @@ export default function TodoList() {
 
   const toggleTodo = (id) => {
     const todo = todos.find(t => t.id === id);
-    
-    if (todo && !todo.completed) {
-      // Play animation first, then mark as complete after delay
+
+    if (todo && todo.column !== 'completed') {
+      // Mark as complete and move to completed column
       setJustCompleted(id);
       setTimeout(() => {
-        setTodos(todos.map(t => 
-          t.id === id ? { ...t, completed: true } : t
+        setTodos(todos.map(t =>
+          t.id === id ? { ...t, column: 'completed' } : t
         ));
         setTimeout(() => setJustCompleted(null), 500);
       }, 800);
-    } else {
-      // Uncompleting - instant
-      setTodos(todos.map(t => 
-        t.id === id ? { ...t, completed: false } : t
-      ));
     }
   };
 
   const deleteTodo = (id) => {
     setTodos(todos.filter(todo => todo.id !== id));
   };
-  
+
   const updateNotes = (id, notes) => {
-    setTodos(todos.map(todo => 
+    setTodos(todos.map(todo =>
       todo.id === id ? { ...todo, notes } : todo
     ));
   };
-  
+
+  const updateTitle = (id, text) => {
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, text } : todo
+    ));
+  };
+
   // Convert URLs in text to clickable links
   const linkifyText = (text) => {
     if (!text) return text;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
-    
+
     return parts.map((part, i) => {
       if (part.match(urlRegex)) {
         return (
@@ -315,40 +285,243 @@ export default function TodoList() {
       return part;
     });
   };
-  
-  const handleDragStart = (e, index) => {
-    setDraggedItem(index);
+
+  const handleDragStart = (e, todo) => {
+    setDraggedItem(todo);
+    setDraggedFromColumn(todo.column);
     e.dataTransfer.effectAllowed = 'move';
   };
-  
-  const handleDragOver = (e, index) => {
+
+  const handleDragOver = (e) => {
     e.preventDefault();
-    if (draggedItem === null || draggedItem === index) return;
-    
-    const newTodos = [...incompleteTodos];
-    const draggedTodo = newTodos[draggedItem];
-    newTodos.splice(draggedItem, 1);
-    newTodos.splice(index, 0, draggedTodo);
-    
-    setTodos([...newTodos, ...completedTodos]);
-    setDraggedItem(index);
-  };
-  
-  const handleDragEnd = () => {
-    setDraggedItem(null);
   };
 
-  const handleKeyPress = (e) => {
+  const handleDropOnColumn = (targetColumn) => {
+    if (!draggedItem) return;
+
+    // If moving to completed column, mark as complete
+    // If moving from completed to any other column, mark as incomplete
+    const updatedTodo = {
+      ...draggedItem,
+      column: targetColumn
+    };
+
+    setTodos(todos.map(t =>
+      t.id === draggedItem.id ? updatedTodo : t
+    ));
+
+    setDraggedItem(null);
+    setDraggedFromColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDraggedFromColumn(null);
+  };
+
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       addTodo();
     }
   };
 
-  // Separate completed and incomplete todos
-  const incompleteTodos = todos.filter(t => !t.completed);
-  const completedTodos = todos.filter(t => t.completed);
-  const completedCount = completedTodos.length;
-  const totalCount = todos.length;
+  // Group todos by column
+  const inboxTodos = todos.filter(t => t.column === 'inbox');
+  const duckbillTodos = todos.filter(t => t.column === 'duckbill');
+  const waitingTodos = todos.filter(t => t.column === 'waiting');
+  const completedTodos = todos.filter(t => t.column === 'completed');
+
+  const columnConfigs = [
+    { name: 'inbox', title: 'Inbox', todos: inboxTodos, gradient: 'from-blue-50 to-indigo-50', border: 'border-blue-200', icon: '📥' },
+    { name: 'duckbill', title: 'Duckbill', todos: duckbillTodos, gradient: 'from-yellow-50 to-orange-50', border: 'border-yellow-200', icon: '🦆' },
+    { name: 'waiting', title: 'Waiting', todos: waitingTodos, gradient: 'from-purple-50 to-pink-50', border: 'border-purple-200', icon: '⏳' },
+    { name: 'completed', title: 'Completed', todos: completedTodos, gradient: 'from-emerald-50 to-teal-50', border: 'border-emerald-200', icon: '✅' },
+  ];
+
+  const renderTodo = (todo) => {
+    const isBeingCompleted = justCompleted === todo.id;
+    const isCompleted = todo.column === 'completed';
+
+    return (
+      <div
+        key={todo.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, todo)}
+        onDragEnd={handleDragEnd}
+        className={`${
+          isBeingCompleted ? 'completion-pulse' : ''
+        } ${
+          draggedItem?.id === todo.id ? 'opacity-50' : ''
+        } mb-2`}
+      >
+        <div
+          className={`bg-white border-2 ${
+            isCompleted ? 'border-emerald-300' : 'border-purple-200'
+          } hover:border-purple-300 hover:shadow-md shadow-sm rounded-xl transition-all cursor-move`}
+        >
+          <div className="flex items-center gap-2 p-3">
+            {/* Smaller, more elegant checkbox */}
+            <button
+              onClick={() => !isCompleted && toggleTodo(todo.id)}
+              className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                isCompleted
+                  ? 'bg-gradient-to-br from-emerald-400 to-teal-500 border-emerald-400'
+                  : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+              }`}
+            >
+              {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
+            </button>
+
+            {/* Editable title */}
+            {editingTitle === todo.id ? (
+              <input
+                type="text"
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                onBlur={() => {
+                  if (titleInput.trim()) {
+                    updateTitle(todo.id, titleInput);
+                  }
+                  setEditingTitle(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (titleInput.trim()) {
+                      updateTitle(todo.id, titleInput);
+                    }
+                    setEditingTitle(null);
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingTitle(null);
+                  }
+                }}
+                className="flex-1 px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm text-gray-800"
+                autoFocus
+              />
+            ) : (
+              <span
+                className={`flex-1 text-sm ${
+                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
+                }`}
+                onDoubleClick={() => {
+                  if (!isCompleted) {
+                    setEditingTitle(todo.id);
+                    setTitleInput(todo.text);
+                  }
+                }}
+              >
+                {todo.text}
+              </span>
+            )}
+
+            {isBeingCompleted && (
+              <span className="text-xl">✨</span>
+            )}
+
+            {/* Edit button */}
+            {!isCompleted && editingTitle !== todo.id && (
+              <button
+                onClick={() => {
+                  setEditingTitle(todo.id);
+                  setTitleInput(todo.text);
+                }}
+                className="flex-shrink-0 text-gray-300 hover:text-purple-500 transition-colors"
+                title="Edit title"
+              >
+                <Edit2 size={14} />
+              </button>
+            )}
+
+            {/* Notes button */}
+            <button
+              onClick={() => {
+                if (expandedTask === todo.id) {
+                  setExpandedTask(null);
+                } else {
+                  setExpandedTask(todo.id);
+                  setEditingNote(null);
+                }
+              }}
+              className={`flex-shrink-0 text-xs px-2 py-1 rounded transition-all ${
+                todo.notes ? 'bg-purple-100 text-purple-700' : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+              }`}
+              title={todo.notes ? 'Has notes' : 'Add notes'}
+            >
+              📝
+            </button>
+
+            {/* Delete button */}
+            <button
+              onClick={() => deleteTodo(todo.id)}
+              className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+
+          {/* Notes section */}
+          {expandedTask === todo.id && (
+            <div className="px-3 pb-3 pt-2 border-t border-purple-100">
+              {editingNote === todo.id ? (
+                <div>
+                  <textarea
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    placeholder="Add notes, links, or context..."
+                    className="w-full px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none"
+                    rows="3"
+                    autoFocus
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => {
+                        updateNotes(todo.id, noteInput);
+                        setEditingNote(null);
+                        setNoteInput('');
+                      }}
+                      className="px-3 py-1 bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-600 transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingNote(null);
+                        setNoteInput('');
+                      }}
+                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {todo.notes ? (
+                    <div className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded">
+                      {linkifyText(todo.notes)}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400 italic">
+                      No notes yet
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setEditingNote(todo.id);
+                      setNoteInput(todo.notes);
+                    }}
+                    className="mt-2 text-xs text-purple-600 hover:text-purple-800 font-medium"
+                  >
+                    {todo.notes ? 'Edit notes' : 'Add notes'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Password screen
   if (!isAuthenticated) {
@@ -357,7 +530,7 @@ export default function TodoList() {
         <CosmicDots />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '8s'}}></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '10s'}}></div>
-        
+
         <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50 max-w-md w-full relative z-10">
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4 float-animation">
@@ -380,7 +553,7 @@ export default function TodoList() {
               Protected cosmic space
             </p>
           </div>
-          
+
           <form onSubmit={handlePasswordSubmit}>
             <div className="relative mb-4">
               <input
@@ -416,14 +589,14 @@ export default function TodoList() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-8 px-4 relative overflow-hidden">
       <CosmicDots />
       <ShootingStars />
-      
+
       {/* Enhanced nebula effects with more layers */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '8s'}}></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '10s', animationDelay: '2s'}}></div>
       <div className="absolute top-1/2 right-10 w-64 h-64 bg-pink-500 rounded-full filter blur-3xl opacity-35 animate-pulse" style={{animationDuration: '12s', animationDelay: '4s'}}></div>
       <div className="absolute top-1/3 left-10 w-80 h-80 bg-indigo-500 rounded-full filter blur-3xl opacity-30 animate-pulse" style={{animationDuration: '15s', animationDelay: '1s'}}></div>
-      
-      <div className="max-w-2xl mx-auto relative z-10">
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Celebration overlay */}
         {showCelebration && (
           <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
@@ -433,7 +606,7 @@ export default function TodoList() {
                 All complete
               </div>
             </div>
-            
+
             {/* Subtle sparkles */}
             {[...Array(8)].map((_, i) => (
               <div
@@ -452,33 +625,9 @@ export default function TodoList() {
             ))}
           </div>
         )}
-        
+
         <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50">
-          
-          {/* List switcher tabs */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setCurrentList('personal')}
-              className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all ${
-                currentList === 'personal'
-                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              🏠 Personal
-            </button>
-            <button
-              onClick={() => setCurrentList('work')}
-              className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all ${
-                currentList === 'work'
-                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              💼 Work
-            </button>
-          </div>
-          
+
           <div className="text-center mb-8">
             {/* Floating cosmic illustration above title */}
             <div className="flex justify-center mb-4 float-animation">
@@ -494,21 +643,21 @@ export default function TodoList() {
                 <circle cx="30" cy="35" r="3" fill="white" opacity="0.4"/>
               </svg>
             </div>
-            
+
             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-3">
-              {currentList === 'work' ? 'Work' : 'Personal'}
+              Cosmic Tasks
             </h1>
             <p className="text-sm text-gray-500 italic font-light">
               A small moment in an infinite universe
             </p>
           </div>
-          
+
           <div className="flex gap-2 mb-6">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="What matters right now?"
               className="flex-1 px-5 py-3 border-2 border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm"
             />
@@ -521,252 +670,57 @@ export default function TodoList() {
             </button>
           </div>
 
-          <div className="space-y-3">
-            {todos.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="mb-6">
-                  {/* Enhanced empty state illustration */}
-                  <svg width="120" height="120" viewBox="0 0 100 100" className="mx-auto opacity-40">
-                    <defs>
-                      <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{stopColor: '#A78BFA', stopOpacity: 0.8}} />
-                        <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 0.4}} />
-                      </linearGradient>
-                    </defs>
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="url(#circleGradient)" strokeWidth="2"/>
-                    <circle cx="50" cy="50" r="30" fill="none" stroke="url(#circleGradient)" strokeWidth="1.5" opacity="0.7"/>
-                    <circle cx="50" cy="50" r="20" fill="none" stroke="url(#circleGradient)" strokeWidth="1" opacity="0.5"/>
-                    <circle cx="50" cy="50" r="3" fill="#A78BFA" opacity="0.8"/>
-                    {/* Small orbiting dots */}
-                    <circle cx="50" cy="10" r="1.5" fill="#C084FC"/>
-                    <circle cx="90" cy="50" r="1.5" fill="#818CF8"/>
-                    <circle cx="50" cy="90" r="1.5" fill="#F0ABFC"/>
-                  </svg>
-                </div>
-                <p className="text-gray-400 text-lg font-light">The blank canvas awaits</p>
-                <p className="text-gray-300 text-xs mt-2">Each task is a star in your constellation</p>
-              </div>
-            ) : (
-              <>
-                {/* Incomplete tasks - including ones being completed */}
-                {incompleteTodos.map((todo, index) => {
-                  const isBeingCompleted = justCompleted === todo.id;
-                  return (
-                  <div
-                    key={todo.id}
-                    draggable={!isBeingCompleted}
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`${
-                      isBeingCompleted ? 'completion-pulse' : ''
-                    } ${
-                      draggedItem === index ? 'opacity-50' : ''
-                    }`}
-                  >
-                    <div
-                      className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-2 border-purple-200 hover:border-purple-300 hover:shadow-md shadow-sm rounded-2xl transition-all cursor-move"
-                    >
-                      <div className="flex items-center gap-3 p-4">
-                        <button
-                          onClick={() => toggleTodo(todo.id)}
-                          className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all transform hover:scale-110 border-purple-400 hover:border-purple-600 hover:bg-purple-50"
-                        >
-                          {isBeingCompleted && <Check size={16} />}
-                        </button>
-                        
-                        <span className="flex-1 text-gray-800">
-                          {todo.text}
-                        </span>
-                        
-                        {isBeingCompleted && (
-                          <span className="text-3xl animate-bounce">✨🎉</span>
-                        )}
-                        
-                        <button
-                          onClick={() => {
-                            if (expandedTask === todo.id) {
-                              setExpandedTask(null);
-                            } else {
-                              setExpandedTask(todo.id);
-                              setEditingNote(null);
-                            }
-                          }}
-                          className={`flex-shrink-0 text-sm px-3 py-1 rounded-lg transition-all ${
-                            todo.notes ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
-                          }`}
-                          title={todo.notes ? 'Has notes' : 'Add notes'}
-                        >
-                          📝
-                        </button>
-                        
-                        <button
-                          onClick={() => deleteTodo(todo.id)}
-                          className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors transform hover:scale-110"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                      
-                      {/* Notes section */}
-                      {expandedTask === todo.id && (
-                        <div className="px-4 pb-4 pt-2 border-t border-purple-100">
-                          {editingNote === todo.id ? (
-                            <div>
-                              <textarea
-                                value={noteInput}
-                                onChange={(e) => setNoteInput(e.target.value)}
-                                placeholder="Add notes, links, or context..."
-                                className="w-full px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none"
-                                rows="3"
-                                autoFocus
-                              />
-                              <div className="flex gap-2 mt-2">
-                                <button
-                                  onClick={() => {
-                                    updateNotes(todo.id, noteInput);
-                                    setEditingNote(null);
-                                    setNoteInput('');
-                                  }}
-                                  className="px-3 py-1 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingNote(null);
-                                    setNoteInput('');
-                                  }}
-                                  className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              {todo.notes ? (
-                                <div className="text-sm text-gray-600 whitespace-pre-wrap bg-white p-3 rounded-lg">
-                                  {linkifyText(todo.notes)}
-                                </div>
-                              ) : (
-                                <div className="text-sm text-gray-400 italic">
-                                  No notes yet
-                                </div>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setEditingNote(todo.id);
-                                  setNoteInput(todo.notes);
-                                }}
-                                className="mt-2 text-xs text-purple-600 hover:text-purple-800 font-medium"
-                              >
-                                {todo.notes ? 'Edit notes' : 'Add notes'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+          {/* 4-column layout */}
+          <div className="grid grid-cols-4 gap-4">
+            {columnConfigs.map((config) => (
+              <div
+                key={config.name}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDropOnColumn(config.name)}
+                className={`bg-gradient-to-b ${config.gradient} border-2 ${config.border} rounded-2xl p-4 min-h-[400px] transition-all ${
+                  draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-300 ring-opacity-50' : ''
+                }`}
+              >
+                <h2 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <span>{config.icon}</span>
+                  <span>{config.title}</span>
+                  <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
+                </h2>
+
+                {config.todos.length === 0 ? (
+                  <div className="text-center py-12 text-xs text-gray-400 italic">
+                    Drop tasks here
                   </div>
-                );
-                })}
-                
-                {/* Completed tasks */}
-                {completedTodos.length > 0 && (
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setShowCompleted(!showCompleted)}
-                      className="w-full text-left text-xs text-gray-400 hover:text-gray-600 font-medium mb-2 px-2 flex items-center gap-2 transition-colors"
-                    >
-                      <span className="transform transition-transform" style={{display: 'inline-block', transform: showCompleted ? 'rotate(90deg)' : 'rotate(0deg)'}}>
-                        ▶
-                      </span>
-                      COMPLETED ({completedTodos.length})
-                    </button>
-                    {showCompleted && completedTodos.map((todo) => (
-                      <div
-                        key={todo.id}
-                        className="flex items-center gap-3 p-4 rounded-2xl transition-all bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-300 shadow-sm mb-2"
-                      >
-                        <button
-                          onClick={() => toggleTodo(todo.id)}
-                          className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all transform hover:scale-110 bg-gradient-to-br from-emerald-400 to-teal-500 border-emerald-500 shadow-md"
-                        >
-                          <Check size={16} />
-                        </button>
-                        
-                        <span className="flex-1 line-through text-gray-400">
-                          {todo.text}
-                        </span>
-                        
-                        <button
-                          onClick={() => deleteTodo(todo.id)}
-                          className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors transform hover:scale-110"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                ) : (
+                  config.todos.map((todo) => renderTodo(todo))
                 )}
-              </>
-            )}
+              </div>
+            ))}
           </div>
 
           {todos.length > 0 && (
             <div className="mt-8 pt-6 border-t-2 border-purple-100">
-              <div className="flex items-center justify-between">
-                {/* Circular progress */}
-                <div className="flex items-center gap-4">
-                  <div className="relative w-16 h-16">
-                    <svg className="transform -rotate-90 w-16 h-16">
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        stroke="#E5E7EB"
-                        strokeWidth="6"
-                        fill="none"
-                      />
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        stroke="url(#progressGradient)"
-                        strokeWidth="6"
-                        fill="none"
-                        strokeDasharray={`${2 * Math.PI * 28}`}
-                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - (completedCount / totalCount))}`}
-                        strokeLinecap="round"
-                        className="transition-all duration-500"
-                      />
-                      <defs>
-                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#6366F1'}} />
-                          <stop offset="50%" style={{stopColor: '#A855F7'}} />
-                          <stop offset="100%" style={{stopColor: '#EC4899'}} />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-bold text-gray-700">
-                        {Math.round((completedCount / totalCount) * 100)}%
-                      </span>
-                    </div>
+              <div className="flex items-center justify-center gap-8">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                    {completedTodos.length}
                   </div>
-                  
-                  <div>
-                    <div className="text-sm font-semibold text-gray-700">
-                      {completedCount} of {totalCount} complete
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {incompleteTodos.length} remaining
-                    </div>
-                  </div>
+                  <div className="text-xs text-gray-500">Completed</div>
                 </div>
-                
-                {completedCount === totalCount && totalCount > 0 && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                    {todos.length - completedTodos.length}
+                  </div>
+                  <div className="text-xs text-gray-500">In Progress</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                    {todos.length}
+                  </div>
+                  <div className="text-xs text-gray-500">Total</div>
+                </div>
+
+                {completedTodos.length === todos.length && todos.length > 0 && (
                   <div className="text-2xl animate-bounce">
                     🎉
                   </div>
@@ -774,10 +728,10 @@ export default function TodoList() {
               </div>
             </div>
           )}
-          
+
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-400 italic font-light">
-              {totalCount === 0 ? "Each action ripples forward through time" : "One task at a time, one moment at a time"}
+              {todos.length === 0 ? "Each action ripples forward through time" : "Drag tasks between columns • Double-click to edit titles"}
             </p>
           </div>
         </div>
