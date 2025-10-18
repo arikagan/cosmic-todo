@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Check } from 'lucide-react';
 
 // Shooting stars
 const ShootingStars = () => (
@@ -115,11 +115,33 @@ export default function TodoList() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
   const [draggedFromColumn, setDraggedFromColumn] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [noteInput, setNoteInput] = useState('');
   const [editingTitle, setEditingTitle] = useState(null);
   const [titleInput, setTitleInput] = useState('');
+  const [editingColumnTitle, setEditingColumnTitle] = useState(null);
+  const [columnTitleInput, setColumnTitleInput] = useState('');
+
+  // Column titles stored in localStorage
+  const [columnTitles, setColumnTitles] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cosmicColumnTitles');
+      return saved ? JSON.parse(saved) : {
+        inbox: '📥 Inbox',
+        duckbill: '🦆 Duckbill',
+        waiting: '⏳ Waiting',
+        completed: '✅ Completed'
+      };
+    }
+    return {
+      inbox: '📥 Inbox',
+      duckbill: '🦆 Duckbill',
+      waiting: '⏳ Waiting',
+      completed: '✅ Completed'
+    };
+  });
 
   // Add ALL styles to the document - including Tailwind-like utilities
   useEffect(() => {
@@ -239,6 +261,13 @@ export default function TodoList() {
     }
   }, [todos]);
 
+  // Save column titles to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cosmicColumnTitles', JSON.stringify(columnTitles));
+    }
+  }, [columnTitles]);
+
   // Check for completion and trigger celebration
   useEffect(() => {
     const completedCount = todos.filter(t => t.column === 'completed').length;
@@ -271,13 +300,20 @@ export default function TodoList() {
 
   const addTodo = () => {
     if (inputValue.trim()) {
-      setTodos([...todos, {
+      // Find the highest order in the inbox column
+      const inboxTodos = todos.filter(t => t.column === 'inbox');
+      const maxOrder = inboxTodos.length > 0 ? Math.max(...inboxTodos.map(t => t.order || 0)) : -1;
+
+      // Add new task at the top (lowest order number)
+      const newTodo = {
         id: Date.now(),
         text: inputValue,
         column: 'inbox', // New tasks start in inbox
         notes: '',
-        order: todos.length
-      }]);
+        order: maxOrder + 1
+      };
+
+      setTodos([newTodo, ...todos]);
       setInputValue('');
     }
   };
@@ -343,15 +379,82 @@ export default function TodoList() {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, overTodo, targetColumn) => {
     e.preventDefault();
+    if (!draggedItem || !overTodo) return;
+
+    // Only allow reordering within the same column
+    if (draggedItem.column === targetColumn && draggedItem.id !== overTodo.id) {
+      setDragOverIndex(overTodo.id);
+    }
+  };
+
+  const handleDropOnTask = (overTodo, targetColumn) => {
+    if (!draggedItem) return;
+
+    const isSameColumn = draggedItem.column === targetColumn;
+
+    if (isSameColumn) {
+      // Reordering within the same column
+      const columnTodos = todos.filter(t => t.column === targetColumn);
+      const draggedIndex = columnTodos.findIndex(t => t.id === draggedItem.id);
+      const overIndex = columnTodos.findIndex(t => t.id === overTodo.id);
+
+      if (draggedIndex !== overIndex) {
+        // Reorder the tasks
+        const reordered = [...columnTodos];
+        const [removed] = reordered.splice(draggedIndex, 1);
+        reordered.splice(overIndex, 0, removed);
+
+        // Update order property
+        const reorderedWithOrder = reordered.map((todo, index) => ({
+          ...todo,
+          order: index
+        }));
+
+        // Merge with other columns
+        const otherTodos = todos.filter(t => t.column !== targetColumn);
+        setTodos([...otherTodos, ...reorderedWithOrder]);
+      }
+    } else {
+      // Moving to a different column
+      const columnTodos = todos.filter(t => t.column === targetColumn);
+      const overIndex = columnTodos.findIndex(t => t.id === overTodo.id);
+
+      // Update the dragged todo's column and insert at the drop position
+      const updatedDraggedTodo = {
+        ...draggedItem,
+        column: targetColumn,
+        order: overIndex
+      };
+
+      // Remove from old position
+      const todosWithoutDragged = todos.filter(t => t.id !== draggedItem.id);
+
+      // Get tasks in target column and insert at position
+      const targetColumnTodos = todosWithoutDragged.filter(t => t.column === targetColumn);
+      targetColumnTodos.splice(overIndex, 0, updatedDraggedTodo);
+
+      // Reindex
+      const reindexed = targetColumnTodos.map((todo, index) => ({
+        ...todo,
+        order: index
+      }));
+
+      // Merge with other columns
+      const otherTodos = todosWithoutDragged.filter(t => t.column !== targetColumn);
+      setTodos([...otherTodos, ...reindexed]);
+    }
+
+    setDraggedItem(null);
+    setDraggedFromColumn(null);
+    setDragOverIndex(null);
   };
 
   const handleDropOnColumn = (targetColumn) => {
     if (!draggedItem) return;
 
-    // If moving to completed column, mark as complete
-    // If moving from completed to any other column, mark as incomplete
+    // Drop on empty area of column - add to end
     const updatedTodo = {
       ...draggedItem,
       column: targetColumn
@@ -363,11 +466,20 @@ export default function TodoList() {
 
     setDraggedItem(null);
     setDraggedFromColumn(null);
+    setDragOverIndex(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
     setDraggedFromColumn(null);
+    setDragOverIndex(null);
+  };
+
+  const updateColumnTitle = (columnName, newTitle) => {
+    setColumnTitles({
+      ...columnTitles,
+      [columnName]: newTitle
+    });
   };
 
   const handleKeyDown = (e) => {
@@ -376,20 +488,20 @@ export default function TodoList() {
     }
   };
 
-  // Group todos by column
-  const inboxTodos = todos.filter(t => t.column === 'inbox');
-  const duckbillTodos = todos.filter(t => t.column === 'duckbill');
-  const waitingTodos = todos.filter(t => t.column === 'waiting');
-  const completedTodos = todos.filter(t => t.column === 'completed');
+  // Group todos by column and sort by order
+  const inboxTodos = todos.filter(t => t.column === 'inbox').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const duckbillTodos = todos.filter(t => t.column === 'duckbill').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const waitingTodos = todos.filter(t => t.column === 'waiting').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const completedTodos = todos.filter(t => t.column === 'completed').sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const columnConfigs = [
-    { name: 'inbox', title: 'Inbox', todos: inboxTodos, gradient: 'from-blue-50 to-indigo-50', border: 'border-blue-200', icon: '📥' },
-    { name: 'duckbill', title: 'Duckbill', todos: duckbillTodos, gradient: 'from-yellow-50 to-orange-50', border: 'border-yellow-200', icon: '🦆' },
-    { name: 'waiting', title: 'Waiting', todos: waitingTodos, gradient: 'from-purple-50 to-pink-50', border: 'border-purple-200', icon: '⏳' },
-    { name: 'completed', title: 'Completed', todos: completedTodos, gradient: 'from-emerald-50 to-teal-50', border: 'border-emerald-200', icon: '✅' },
+    { name: 'inbox', title: columnTitles.inbox, todos: inboxTodos, gradient: 'from-blue-50 to-indigo-50', border: 'border-blue-200' },
+    { name: 'duckbill', title: columnTitles.duckbill, todos: duckbillTodos, gradient: 'from-yellow-50 to-orange-50', border: 'border-yellow-200' },
+    { name: 'waiting', title: columnTitles.waiting, todos: waitingTodos, gradient: 'from-purple-50 to-pink-50', border: 'border-purple-200' },
+    { name: 'completed', title: columnTitles.completed, todos: completedTodos, gradient: 'from-emerald-50 to-teal-50', border: 'border-emerald-200' },
   ];
 
-  const renderTodo = (todo) => {
+  const renderTodo = (todo, columnName) => {
     const isBeingCompleted = justCompleted === todo.id;
     const isCompleted = todo.column === 'completed';
 
@@ -398,11 +510,15 @@ export default function TodoList() {
         key={todo.id}
         draggable
         onDragStart={(e) => handleDragStart(e, todo)}
+        onDragOver={(e) => handleDragOver(e, todo, columnName)}
+        onDrop={() => handleDropOnTask(todo, columnName)}
         onDragEnd={handleDragEnd}
         className={`${
           isBeingCompleted ? 'completion-pulse' : ''
         } ${
           draggedItem?.id === todo.id ? 'opacity-50' : ''
+        } ${
+          dragOverIndex === todo.id ? 'border-t-4 border-purple-500' : ''
         } mb-2`}
       >
         <div
@@ -451,10 +567,10 @@ export default function TodoList() {
               />
             ) : (
               <span
-                className={`flex-1 text-sm ${
-                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
+                className={`flex-1 text-sm cursor-pointer ${
+                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800 hover:text-purple-600'
                 }`}
-                onDoubleClick={() => {
+                onClick={() => {
                   if (!isCompleted) {
                     setEditingTitle(todo.id);
                     setTitleInput(todo.text);
@@ -467,20 +583,6 @@ export default function TodoList() {
 
             {isBeingCompleted && (
               <span className="text-xl">✨</span>
-            )}
-
-            {/* Edit button */}
-            {!isCompleted && editingTitle !== todo.id && (
-              <button
-                onClick={() => {
-                  setEditingTitle(todo.id);
-                  setTitleInput(todo.text);
-                }}
-                className="flex-shrink-0 text-gray-300 hover:text-purple-500 transition-colors"
-                title="Edit title"
-              >
-                <Edit2 size={14} />
-              </button>
             )}
 
             {/* Notes button */}
@@ -703,20 +805,20 @@ export default function TodoList() {
             </p>
           </div>
 
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6 max-w-2xl mx-auto">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What matters right now?"
-              className="flex-1 px-5 py-3 border-2 border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm"
+              className="flex-1 px-4 py-2 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm text-sm"
             />
             <button
               onClick={addTodo}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white px-7 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              <Plus size={20} />
+              <Plus size={18} />
               Add
             </button>
           </div>
@@ -732,18 +834,50 @@ export default function TodoList() {
                   draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-300 ring-opacity-50' : ''
                 }`}
               >
-                <h2 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                  <span>{config.icon}</span>
-                  <span>{config.title}</span>
-                  <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
-                </h2>
+                {editingColumnTitle === config.name ? (
+                  <input
+                    type="text"
+                    value={columnTitleInput}
+                    onChange={(e) => setColumnTitleInput(e.target.value)}
+                    onBlur={() => {
+                      if (columnTitleInput.trim()) {
+                        updateColumnTitle(config.name, columnTitleInput);
+                      }
+                      setEditingColumnTitle(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (columnTitleInput.trim()) {
+                          updateColumnTitle(config.name, columnTitleInput);
+                        }
+                        setEditingColumnTitle(null);
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingColumnTitle(null);
+                      }
+                    }}
+                    className="text-sm font-bold text-gray-700 mb-3 px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 w-full"
+                    autoFocus
+                  />
+                ) : (
+                  <h2
+                    className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
+                    onClick={() => {
+                      setEditingColumnTitle(config.name);
+                      setColumnTitleInput(config.title);
+                    }}
+                  >
+                    <span>{config.title}</span>
+                    <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
+                  </h2>
+                )}
 
                 {config.todos.length === 0 ? (
                   <div className="text-center py-12 text-xs text-gray-400 italic">
                     Drop tasks here
                   </div>
                 ) : (
-                  config.todos.map((todo) => renderTodo(todo))
+                  config.todos.map((todo) => renderTodo(todo, config.name))
                 )}
               </div>
             ))}
@@ -782,7 +916,7 @@ export default function TodoList() {
 
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-400 italic font-light">
-              {todos.length === 0 ? "Each action ripples forward through time" : "Drag tasks between columns • Double-click to edit titles"}
+              {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click to edit"}
             </p>
           </div>
         </div>
