@@ -672,7 +672,7 @@ export default function TodoList() {
           {/* Main content area */}
           <div className="p-3">
             {/* Top row: checkbox + title + actions */}
-            <div className="flex items-start gap-2.5">
+            <div className="flex items-center gap-3">
               {/* Checkbox */}
               <button
                 onClick={(e) => {
@@ -680,7 +680,7 @@ export default function TodoList() {
                   if (!isCompleted) toggleTodo(todo.id);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all mt-0.5 ${
+                className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                   isCompleted
                     ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
                     : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
@@ -737,7 +737,7 @@ export default function TodoList() {
               </div>
 
               {/* Action icons */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {isBeingCompleted && (
                   <span className="text-lg">✨</span>
                 )}
