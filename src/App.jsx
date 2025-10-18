@@ -50,11 +50,46 @@ export default function TodoList() {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Load todos from localStorage on initial render
+  // Load todos from localStorage on initial render with migration from old format
   const [todos, setTodos] = useState(() => {
     if (typeof window !== 'undefined') {
+      // Check if we already have data in the new format
       const saved = localStorage.getItem('cosmicTodos');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        return JSON.parse(saved);
+      }
+
+      // Migration: Check for old data from work/personal tabs
+      const oldWorkTodos = localStorage.getItem('cosmicTodosWork');
+      const oldPersonalTodos = localStorage.getItem('cosmicTodosPersonal');
+
+      if (oldWorkTodos || oldPersonalTodos) {
+        console.log('Migrating old todos to new format...');
+
+        const workTasks = oldWorkTodos ? JSON.parse(oldWorkTodos) : [];
+        const personalTasks = oldPersonalTodos ? JSON.parse(oldPersonalTodos) : [];
+
+        // Merge both lists and convert to new format with column property
+        const migratedTodos = [...workTasks, ...personalTasks].map(todo => ({
+          ...todo,
+          // Assign column based on completion status
+          // Old format used 'completed' boolean, new format uses column + completed status was implied
+          column: todo.completed ? 'completed' : 'inbox'
+        }));
+
+        // Save migrated data to new key
+        localStorage.setItem('cosmicTodos', JSON.stringify(migratedTodos));
+
+        // Clean up old keys
+        localStorage.removeItem('cosmicTodosWork');
+        localStorage.removeItem('cosmicTodosPersonal');
+
+        console.log(`Migrated ${migratedTodos.length} todos successfully!`);
+
+        return migratedTodos;
+      }
+
+      return [];
     }
     return [];
   });
