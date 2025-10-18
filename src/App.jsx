@@ -1013,15 +1013,33 @@ export default function TodoList() {
                       <span className="text-xs font-normal text-gray-400">({config.todos.length})</span>
                     </h2>
 
-                    {/* Archive button - only show for completed column */}
-                    {config.name === 'completed' && config.todos.length > 0 && (
-                      <button
-                        onClick={archiveCompleted}
-                        className="mt-2 w-full text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
-                        title="Archive all completed tasks"
-                      >
-                        📦 Archive All ({config.todos.length})
-                      </button>
+                    {/* Archive controls - only show for completed column */}
+                    {config.name === 'completed' && (
+                      <div className="mt-2 flex gap-1">
+                        {/* Archive All button */}
+                        {config.todos.length > 0 && (
+                          <button
+                            onClick={archiveCompleted}
+                            className="flex-1 text-xs px-2 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            title="Archive all completed tasks"
+                          >
+                            <span>📦</span>
+                            <span className="font-medium">Archive ({config.todos.length})</span>
+                          </button>
+                        )}
+
+                        {/* View Archive button */}
+                        {archivedTasks.length > 0 && (
+                          <button
+                            onClick={() => setShowArchive(true)}
+                            className="flex-1 text-xs px-2 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all shadow-sm hover:shadow flex items-center justify-center gap-1"
+                            title="View archived tasks"
+                          >
+                            <span>👁️</span>
+                            <span className="font-medium">View ({archivedTasks.length})</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -1074,16 +1092,6 @@ export default function TodoList() {
             <p className="text-xs text-gray-400 italic font-light">
               {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click to edit"}
             </p>
-
-            {/* View Archive button */}
-            {archivedTasks.length > 0 && (
-              <button
-                onClick={() => setShowArchive(true)}
-                className="mt-3 text-xs px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                📦 View Archive ({archivedTasks.length} task{archivedTasks.length === 1 ? '' : 's'})
-              </button>
-            )}
           </div>
         </div>
 
