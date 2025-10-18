@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check, FileText } from 'lucide-react';
 
 // Shooting stars
 const ShootingStars = () => (
@@ -725,23 +725,10 @@ export default function TodoList() {
               <span className="text-xl">✨</span>
             )}
 
-            {/* Notes button */}
-            <button
-              onClick={() => {
-                if (expandedTask === todo.id) {
-                  setExpandedTask(null);
-                } else {
-                  setExpandedTask(todo.id);
-                  setEditingNote(null);
-                }
-              }}
-              className={`flex-shrink-0 text-xs px-2 py-1 rounded transition-all ${
-                todo.notes ? 'bg-purple-100 text-purple-700' : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
-              }`}
-              title={todo.notes ? 'Has notes' : 'Add notes'}
-            >
-              📝
-            </button>
+            {/* Notes indicator - only show if has notes */}
+            {todo.notes && !editingNote && (
+              <FileText size={12} className="flex-shrink-0 text-purple-400" />
+            )}
 
             {/* Delete button */}
             <button
@@ -752,63 +739,89 @@ export default function TodoList() {
             </button>
           </div>
 
-          {/* Notes section */}
-          {expandedTask === todo.id && (
-            <div className="px-3 pb-3 pt-2 border-t border-purple-100">
-              {editingNote === todo.id ? (
-                <div>
-                  <textarea
-                    value={noteInput}
-                    onChange={(e) => setNoteInput(e.target.value)}
-                    placeholder="Add notes, links, or context..."
-                    className="w-full px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none"
-                    rows="3"
-                    autoFocus
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => {
-                        updateNotes(todo.id, noteInput);
-                        setEditingNote(null);
-                        setNoteInput('');
-                      }}
-                      className="px-3 py-1 bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-600 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingNote(null);
-                        setNoteInput('');
-                      }}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  {todo.notes ? (
-                    <div className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded">
-                      {linkifyText(todo.notes)}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-400 italic">
-                      No notes yet
-                    </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      setEditingNote(todo.id);
-                      setNoteInput(todo.notes);
-                    }}
-                    className="mt-2 text-xs text-purple-600 hover:text-purple-800 font-medium"
-                  >
-                    {todo.notes ? 'Edit notes' : 'Add notes'}
-                  </button>
+          {/* Inline notes for short notes */}
+          {todo.notes && !editingNote && todo.notes.length <= 100 && (
+            <div
+              className="px-3 pb-2 text-xs text-gray-500 cursor-pointer hover:text-purple-600 transition-colors"
+              onClick={() => {
+                setEditingNote(todo.id);
+                setNoteInput(todo.notes);
+              }}
+              title="Click to edit"
+            >
+              {linkifyText(todo.notes)}
+            </div>
+          )}
+
+          {/* Expandable notes for longer notes */}
+          {todo.notes && !editingNote && todo.notes.length > 100 && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => setExpandedTask(expandedTask === todo.id ? null : todo.id)}
+                className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+              >
+                <FileText size={12} />
+                {expandedTask === todo.id ? 'Hide' : 'Show'} notes
+              </button>
+              {expandedTask === todo.id && (
+                <div
+                  className="mt-2 text-xs text-gray-600 whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2 rounded cursor-pointer hover:bg-opacity-70 transition-all"
+                  onClick={() => {
+                    setEditingNote(todo.id);
+                    setNoteInput(todo.notes);
+                  }}
+                  title="Click to edit"
+                >
+                  {linkifyText(todo.notes)}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Note editing mode */}
+          {editingNote === todo.id && (
+            <div className="px-3 pb-3 pt-2">
+              <textarea
+                value={noteInput}
+                onChange={(e) => setNoteInput(e.target.value)}
+                onBlur={() => {
+                  updateNotes(todo.id, noteInput);
+                  setEditingNote(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setEditingNote(null);
+                    setNoteInput('');
+                  }
+                  if (e.key === 'Enter' && e.metaKey) {
+                    updateNotes(todo.id, noteInput);
+                    setEditingNote(null);
+                  }
+                }}
+                placeholder="Add notes, links, or context... (⌘+Enter to save, Esc to cancel)"
+                className="w-full px-3 py-2 border border-purple-300 border-opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs resize-none bg-white bg-opacity-95"
+                rows="3"
+                autoFocus
+              />
+              <div className="text-xs text-gray-400 mt-1">
+                ⌘+Enter to save • Esc to cancel
+              </div>
+            </div>
+          )}
+
+          {/* Add note button - only show when no notes */}
+          {!todo.notes && !editingNote && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => {
+                  setEditingNote(todo.id);
+                  setNoteInput('');
+                }}
+                className="text-xs text-gray-400 hover:text-purple-600 transition-colors flex items-center gap-1"
+              >
+                <Plus size={12} />
+                Add note
+              </button>
             </div>
           )}
         </div>
