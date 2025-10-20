@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Check, FileText, ExternalLink, GripVertical } from 'lucide-react';
 
 // Shooting stars
 const ShootingStars = () => (
@@ -479,6 +479,7 @@ export default function TodoList() {
   };
 
   const handleDragStart = (e, todo) => {
+    console.log('🎯 DRAG START:', { todoId: todo.id, todoText: todo.text, column: todo.column });
     setDraggedItem(todo);
     setDraggedFromColumn(todo.column);
     e.dataTransfer.effectAllowed = 'move';
@@ -488,6 +489,7 @@ export default function TodoList() {
     e.preventDefault();
     if (!draggedItem || !overTodo || draggedItem.id === overTodo.id) return;
 
+    console.log('📍 DRAG OVER TASK:', { taskId: overTodo.id, taskText: overTodo.text, targetColumn });
     setDragOverColumn(targetColumn);
     setDragOverTaskId(overTodo.id);
   };
@@ -496,6 +498,7 @@ export default function TodoList() {
     e.preventDefault();
     if (!draggedItem) return;
 
+    console.log('📦 DRAG OVER COLUMN:', { targetColumn });
     setDragOverColumn(targetColumn);
     setDragOverTaskId(null); // Hovering over empty space
   };
@@ -504,7 +507,17 @@ export default function TodoList() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!draggedItem) return;
+    if (!draggedItem) {
+      console.log('❌ DROP FAILED: No dragged item');
+      return;
+    }
+
+    console.log('✅ DROP:', {
+      draggedItem: draggedItem.text,
+      targetColumn,
+      dragOverTaskId,
+      fromColumn: draggedFromColumn
+    });
 
     // Get all tasks in target column excluding the dragged one
     const targetColumnTodos = todos.filter(t => t.column === targetColumn && t.id !== draggedItem.id);
@@ -517,6 +530,8 @@ export default function TodoList() {
     } else {
       insertIndex = targetColumnTodos.length; // Add to end if dropped on empty space
     }
+
+    console.log('📍 Insert at index:', insertIndex, 'of', targetColumnTodos.length);
 
     // Create updated dragged item
     const updatedDraggedItem = {
@@ -537,6 +552,8 @@ export default function TodoList() {
     const otherTodos = todos.filter(t => t.column !== targetColumn && t.id !== draggedItem.id);
     setTodos([...otherTodos, ...reindexed]);
 
+    console.log('✨ DROP COMPLETE');
+
     // Clear drag state
     setDraggedItem(null);
     setDraggedFromColumn(null);
@@ -545,6 +562,7 @@ export default function TodoList() {
   };
 
   const handleDragEnd = () => {
+    console.log('🏁 DRAG END');
     setDraggedItem(null);
     setDraggedFromColumn(null);
     setDragOverColumn(null);
@@ -653,88 +671,95 @@ export default function TodoList() {
             isDragging ? 'opacity-0 h-0 overflow-hidden' : ''
           } mb-2 transition-all duration-150`}
         >
-        <div
-          draggable={!isCompleted}
-          onDragStart={(e) => handleDragStart(e, todo)}
-          onDragOver={(e) => handleDragOver(e, todo, columnName)}
-          onDrop={(e) => handleDrop(e, columnName)}
-          onDragEnd={handleDragEnd}
-          onClick={(e) => {
-            // Don't open modal if dragging or clicking on interactive elements
-            const target = e.target;
-            if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.closest('button')) {
-              return;
-            }
-            setDetailModalTask(todo);
-          }}
-          className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
-            isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all hover:shadow-lg ${
-            isCompleted ? 'cursor-pointer' : 'cursor-move'
-          }`}
-        >
-          {/* Main content area */}
-          <div className="p-3" onMouseDown={(e) => {
-            // Prevent text selection when dragging
-            if (!isCompleted && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.closest('button')) {
-              e.preventDefault();
-            }
-          }}>
-            {/* Top row: checkbox + title + actions */}
-            <div className="flex items-center gap-3">
-              {/* Checkbox */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!isCompleted) toggleTodo(todo.id);
+          <div
+            onClick={(e) => {
+              // Don't open modal if clicking on interactive elements or drag handle
+              const target = e.target;
+              if (target.tagName === 'BUTTON' ||
+                  target.tagName === 'INPUT' ||
+                  target.closest('button') ||
+                  target.closest('[data-drag-handle]')) {
+                return;
+              }
+              setDetailModalTask(todo);
+            }}
+            onDragOver={(e) => handleDragOver(e, todo, columnName)}
+            className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
+              isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
+            } shadow-md rounded-xl transition-all hover:shadow-lg cursor-pointer flex items-stretch`}
+          >
+            {/* Drag Handle - Only draggable element */}
+            {!isCompleted && (
+              <div
+                data-drag-handle="true"
+                draggable={true}
+                onDragStart={(e) => {
+                  console.log('🟢 Drag started from handle');
+                  handleDragStart(e, todo);
                 }}
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-                className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                  isCompleted
-                    ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
-                    : 'border-purple-300'
-                }`}
+                onDragEnd={handleDragEnd}
+                className="flex items-center justify-center px-2 cursor-grab active:cursor-grabbing hover:bg-purple-50 hover:bg-opacity-50 rounded-l-xl transition-colors border-r border-purple-200 border-opacity-30"
+                title="Drag to reorder"
               >
-                {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
-              </button>
-
-              {/* Title */}
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold leading-snug ${
-                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
-                }`}>
-                  {todo.text}
-                </div>
-                {/* Subtask progress indicator */}
-                {todo.subtasks && todo.subtasks.length > 0 && (
-                  <div className="text-xs text-purple-600 mt-1">
-                    {todo.subtasks.filter(st => st.completed).length}/{todo.subtasks.length} subtasks
-                  </div>
-                )}
-              </div>
-
-              {/* Action icons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {isBeingCompleted && (
-                  <span className="text-lg">✨</span>
-                )}
-
-                {/* Note indicator */}
-                {todo.notes && (
-                  <FileText size={14} className="text-purple-400 opacity-70" />
-                )}
-              </div>
-            </div>
-
-            {/* Preview notes if they exist (truncated) */}
-            {todo.notes && (
-              <div className="mt-2 ml-7 text-xs text-gray-500 line-clamp-1">
-                {todo.notes}
+                <GripVertical size={16} className="text-purple-300 hover:text-purple-500" />
               </div>
             )}
+
+            {/* Main content area */}
+            <div className={`flex-1 p-3 ${isCompleted ? 'rounded-l-xl' : ''}`}>
+              {/* Top row: checkbox + title + actions */}
+              <div className="flex items-center gap-3">
+                {/* Checkbox */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isCompleted) toggleTodo(todo.id);
+                  }}
+                  className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                    isCompleted
+                      ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
+                      : 'border-purple-300'
+                  }`}
+                >
+                  {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
+                </button>
+
+                {/* Title */}
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-semibold leading-snug ${
+                    isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
+                  }`}>
+                    {todo.text}
+                  </div>
+                  {/* Subtask progress indicator */}
+                  {todo.subtasks && todo.subtasks.length > 0 && (
+                    <div className="text-xs text-purple-600 mt-1">
+                      {todo.subtasks.filter(st => st.completed).length}/{todo.subtasks.length} subtasks
+                    </div>
+                  )}
+                </div>
+
+                {/* Action icons */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isBeingCompleted && (
+                    <span className="text-lg">✨</span>
+                  )}
+
+                  {/* Note indicator */}
+                  {todo.notes && (
+                    <FileText size={14} className="text-purple-400 opacity-70" />
+                  )}
+                </div>
+              </div>
+
+              {/* Preview notes if they exist (truncated) */}
+              {todo.notes && (
+                <div className="mt-2 ml-7 text-xs text-gray-500 line-clamp-1">
+                  {todo.notes}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </div>
     );
