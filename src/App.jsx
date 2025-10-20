@@ -113,11 +113,6 @@ export default function TodoList() {
   const [draggedFromColumn, setDraggedFromColumn] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null);
-  const [expandedTask, setExpandedTask] = useState(null);
-  const [editingNote, setEditingNote] = useState(null);
-  const [noteInput, setNoteInput] = useState('');
-  const [editingTitle, setEditingTitle] = useState(null);
-  const [titleInput, setTitleInput] = useState('');
   const [showArchive, setShowArchive] = useState(false);
   const [detailModalTask, setDetailModalTask] = useState(null);
   const [subtaskInput, setSubtaskInput] = useState('');
@@ -656,6 +651,12 @@ export default function TodoList() {
           onDragStart={(e) => handleDragStart(e, todo)}
           onDragOver={(e) => handleDragOver(e, todo, columnName)}
           onDragEnd={handleDragEnd}
+          onClick={(e) => {
+            // Only open modal if clicking on the card background, not interactive elements
+            if (e.target === e.currentTarget || e.target.closest('.card-content')) {
+              setDetailModalTask(todo);
+            }
+          }}
           className={`${
             isBeingCompleted ? 'completion-pulse' : ''
           } ${
@@ -663,9 +664,9 @@ export default function TodoList() {
           } mb-2 transition-all duration-150`}
         >
         <div
-          className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
+          className={`card-content bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all cursor-move`}
+          } shadow-md rounded-xl transition-all cursor-pointer hover:shadow-lg`}
         >
           {/* Main content area */}
           <div className="p-3">
@@ -690,46 +691,15 @@ export default function TodoList() {
 
               {/* Title */}
               <div className="flex-1 min-w-0">
-                {editingTitle === todo.id ? (
-                  <input
-                    type="text"
-                    value={titleInput}
-                    onChange={(e) => setTitleInput(e.target.value)}
-                    onBlur={() => {
-                      if (titleInput.trim()) {
-                        updateTitle(todo.id, titleInput);
-                      }
-                      setEditingTitle(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        if (titleInput.trim()) {
-                          updateTitle(todo.id, titleInput);
-                        }
-                        setEditingTitle(null);
-                      }
-                      if (e.key === 'Escape') {
-                        setEditingTitle(null);
-                      }
-                    }}
-                    draggable={false}
-                    className="w-full px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm font-semibold text-gray-800"
-                    autoFocus
-                  />
-                ) : (
-                  <div
-                    className={`text-sm font-semibold leading-snug cursor-pointer ${
-                      isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isCompleted) {
-                        setEditingTitle(todo.id);
-                        setTitleInput(todo.text);
-                      }
-                    }}
-                  >
-                    {todo.text}
+                <div className={`text-sm font-semibold leading-snug ${
+                  isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
+                }`}>
+                  {todo.text}
+                </div>
+                {/* Subtask progress indicator */}
+                {todo.subtasks && todo.subtasks.length > 0 && (
+                  <div className="text-xs text-purple-600 mt-1">
+                    {todo.subtasks.filter(st => st.completed).length}/{todo.subtasks.length} subtasks
                   </div>
                 )}
               </div>
@@ -740,107 +710,17 @@ export default function TodoList() {
                   <span className="text-lg">✨</span>
                 )}
 
-                {/* Note icon or add note button */}
-                {todo.notes && !editingNote ? (
+                {/* Note indicator */}
+                {todo.notes && (
                   <FileText size={14} className="text-purple-400 opacity-70" />
-                ) : !editingNote ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingNote(todo.id);
-                      setNoteInput('');
-                    }}
-                    draggable={false}
-                    onDragStart={(e) => e.preventDefault()}
-                    className="text-gray-300 transition-colors"
-                    title="Add note"
-                  >
-                    <FileText size={14} className="opacity-50" />
-                  </button>
-                ) : null}
-
-                {/* Delete button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteTodo(todo.id);
-                  }}
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                  className="text-gray-300 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+                )}
               </div>
             </div>
 
-            {/* Notes section - below the title with clear separation */}
-            {todo.notes && !editingNote && (
-              <div className="mt-2.5 ml-7 mr-0">
-                {todo.notes.length <= 100 ? (
-                  // Short notes: show inline
-                  <div
-                    className="text-xs text-gray-600 leading-relaxed cursor-pointer transition-colors"
-                    onClick={() => {
-                      setEditingNote(todo.id);
-                      setNoteInput(todo.notes);
-                    }}
-                    title="Click to edit"
-                  >
-                    {linkifyText(todo.notes)}
-                  </div>
-                ) : (
-                  // Long notes: expandable
-                  <div>
-                    <button
-                      onClick={() => setExpandedTask(expandedTask === todo.id ? null : todo.id)}
-                      className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
-                    >
-                      <FileText size={11} />
-                      {expandedTask === todo.id ? 'Hide' : 'Show'} notes
-                    </button>
-                    {expandedTask === todo.id && (
-                      <div
-                        className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2.5 rounded cursor-pointer transition-all"
-                        onClick={() => {
-                          setEditingNote(todo.id);
-                          setNoteInput(todo.notes);
-                        }}
-                        title="Click to edit"
-                      >
-                        {linkifyText(todo.notes)}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Note editing mode */}
-            {editingNote === todo.id && (
-              <div className="mt-2.5 ml-7 mr-0">
-                <textarea
-                  value={noteInput}
-                  onChange={(e) => setNoteInput(e.target.value)}
-                  onBlur={() => {
-                    updateNotes(todo.id, noteInput);
-                    setEditingNote(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setEditingNote(null);
-                      setNoteInput('');
-                    }
-                    if (e.key === 'Enter' && e.metaKey) {
-                      updateNotes(todo.id, noteInput);
-                      setEditingNote(null);
-                    }
-                  }}
-                  placeholder="Add notes, links, or context..."
-                  className="w-full px-2.5 py-2 border border-purple-300 border-opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs resize-none bg-white bg-opacity-95 leading-relaxed"
-                  rows="3"
-                  autoFocus
-                />
+            {/* Preview notes if they exist (truncated) */}
+            {todo.notes && (
+              <div className="mt-2 ml-7 text-xs text-gray-500 line-clamp-1">
+                {todo.notes}
               </div>
             )}
           </div>
@@ -1057,10 +937,179 @@ export default function TodoList() {
 
           <div className="mt-8 text-center">
             <p className="text-xs text-purple-200 italic font-light drop-shadow">
-              {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click to edit"}
+              {todos.length === 0 ? "Each action ripples forward through time" : "Drag to reorder • Click card for details"}
             </p>
           </div>
         </div>
+
+        {/* Task Detail Modal */}
+        {detailModalTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <input
+                    type="text"
+                    value={detailModalTask.text}
+                    onChange={(e) => {
+                      updateTitle(detailModalTask.id, e.target.value);
+                      setDetailModalTask({ ...detailModalTask, text: e.target.value });
+                    }}
+                    className="flex-1 text-2xl font-bold text-gray-800 border-none focus:outline-none focus:ring-2 focus:ring-purple-400 rounded px-2 py-1"
+                  />
+                  <button
+                    onClick={() => setDetailModalTask(null)}
+                    className="text-gray-400 hover:text-gray-600 text-3xl leading-none ml-4"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Notes Section */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
+                  <textarea
+                    value={detailModalTask.notes || ''}
+                    onChange={(e) => {
+                      updateNotes(detailModalTask.id, e.target.value);
+                      setDetailModalTask({ ...detailModalTask, notes: e.target.value });
+                    }}
+                    placeholder="Add notes, links, or context..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none min-h-[100px]"
+                  />
+                </div>
+
+                {/* Subtasks Section */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Subtasks {detailModalTask.subtasks && detailModalTask.subtasks.length > 0 && (
+                      <span className="text-purple-600">
+                        ({detailModalTask.subtasks.filter(st => st.completed).length}/{detailModalTask.subtasks.length})
+                      </span>
+                    )}
+                  </h3>
+
+                  {/* Subtask List */}
+                  <div className="space-y-2 mb-3">
+                    {detailModalTask.subtasks?.map((subtask) => (
+                      <div
+                        key={subtask.id}
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                      >
+                        <button
+                          onClick={() => {
+                            toggleSubtask(detailModalTask.id, subtask.id);
+                            const updatedSubtasks = detailModalTask.subtasks.map(st =>
+                              st.id === subtask.id ? { ...st, completed: !st.completed } : st
+                            );
+                            setDetailModalTask({ ...detailModalTask, subtasks: updatedSubtasks });
+                          }}
+                          className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                            subtask.completed
+                              ? 'bg-purple-500 border-purple-500'
+                              : 'border-gray-300 hover:border-purple-400'
+                          }`}
+                        >
+                          {subtask.completed && <Check size={10} className="text-white" />}
+                        </button>
+                        <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                          {subtask.text}
+                        </span>
+                        <button
+                          onClick={() => {
+                            deleteSubtask(detailModalTask.id, subtask.id);
+                            const updatedSubtasks = detailModalTask.subtasks.filter(st => st.id !== subtask.id);
+                            setDetailModalTask({ ...detailModalTask, subtasks: updatedSubtasks });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add Subtask Input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={subtaskInput}
+                      onChange={(e) => setSubtaskInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && subtaskInput.trim()) {
+                          addSubtask(detailModalTask.id, subtaskInput);
+                          const newSubtask = {
+                            id: Date.now(),
+                            text: subtaskInput,
+                            completed: false
+                          };
+                          const updatedSubtasks = [...(detailModalTask.subtasks || []), newSubtask];
+                          setDetailModalTask({ ...detailModalTask, subtasks: updatedSubtasks });
+                          setSubtaskInput('');
+                        }
+                      }}
+                      placeholder="Add a subtask..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        if (subtaskInput.trim()) {
+                          addSubtask(detailModalTask.id, subtaskInput);
+                          const newSubtask = {
+                            id: Date.now(),
+                            text: subtaskInput,
+                            completed: false
+                          };
+                          const updatedSubtasks = [...(detailModalTask.subtasks || []), newSubtask];
+                          setDetailModalTask({ ...detailModalTask, subtasks: updatedSubtasks });
+                          setSubtaskInput('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 font-medium">Move to:</label>
+                  <select
+                    value={detailModalTask.column}
+                    onChange={(e) => {
+                      moveTaskToColumn(detailModalTask.id, e.target.value);
+                      setDetailModalTask({ ...detailModalTask, column: e.target.value });
+                    }}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                  >
+                    <option value="inbox">📥 Inbox</option>
+                    <option value="duckbill">🦆 Duckbill</option>
+                    <option value="waiting">⏳ Waiting</option>
+                    <option value="completed">✅ Completed</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => {
+                    if (window.confirm('Delete this task?')) {
+                      deleteTodo(detailModalTask.id);
+                      setDetailModalTask(null);
+                    }
+                  }}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                >
+                  Delete Task
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Archive Modal */}
         {showArchive && (
