@@ -647,6 +647,13 @@ export default function TodoList() {
 
         {/* Hide the actual dragged item, keep others visible */}
         <div
+          className={`${
+            isBeingCompleted ? 'completion-pulse' : ''
+          } ${
+            isDragging ? 'opacity-0 h-0 overflow-hidden' : ''
+          } mb-2 transition-all duration-150`}
+        >
+        <div
           draggable={!isCompleted}
           onDragStart={(e) => handleDragStart(e, todo)}
           onDragOver={(e) => handleDragOver(e, todo, columnName)}
@@ -660,19 +667,19 @@ export default function TodoList() {
             }
             setDetailModalTask(todo);
           }}
-          className={`${
-            isBeingCompleted ? 'completion-pulse' : ''
-          } ${
-            isDragging ? 'opacity-0 h-0 overflow-hidden' : ''
-          } mb-2 transition-all duration-150`}
-        >
-        <div
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all cursor-move hover:shadow-lg`}
+          } shadow-md rounded-xl transition-all hover:shadow-lg ${
+            isCompleted ? 'cursor-pointer' : 'cursor-move'
+          }`}
         >
           {/* Main content area */}
-          <div className="p-3">
+          <div className="p-3" onMouseDown={(e) => {
+            // Prevent text selection when dragging
+            if (!isCompleted && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.closest('button')) {
+              e.preventDefault();
+            }
+          }}>
             {/* Top row: checkbox + title + actions */}
             <div className="flex items-center gap-3">
               {/* Checkbox */}
