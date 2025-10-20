@@ -111,13 +111,16 @@ export default function TodoList() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
   const [draggedFromColumn, setDraggedFromColumn] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [noteInput, setNoteInput] = useState('');
   const [editingTitle, setEditingTitle] = useState(null);
   const [titleInput, setTitleInput] = useState('');
   const [showArchive, setShowArchive] = useState(false);
+  const [detailModalTask, setDetailModalTask] = useState(null);
+  const [subtaskInput, setSubtaskInput] = useState('');
 
   // Column titles stored in localStorage
   const [columnTitles, setColumnTitles] = useState(() => {
@@ -405,6 +408,57 @@ export default function TodoList() {
     ));
   };
 
+  const addSubtask = (todoId, subtaskText) => {
+    if (!subtaskText.trim()) return;
+
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId) {
+        const subtasks = todo.subtasks || [];
+        return {
+          ...todo,
+          subtasks: [...subtasks, {
+            id: Date.now(),
+            text: subtaskText,
+            completed: false
+          }]
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const toggleSubtask = (todoId, subtaskId) => {
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId && todo.subtasks) {
+        return {
+          ...todo,
+          subtasks: todo.subtasks.map(st =>
+            st.id === subtaskId ? { ...st, completed: !st.completed } : st
+          )
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const deleteSubtask = (todoId, subtaskId) => {
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId && todo.subtasks) {
+        return {
+          ...todo,
+          subtasks: todo.subtasks.filter(st => st.id !== subtaskId)
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const moveTaskToColumn = (todoId, newColumn) => {
+    setTodos(todos.map(todo =>
+      todo.id === todoId ? { ...todo, column: newColumn } : todo
+    ));
+  };
+
   // Convert URLs in text to clickable links
   const linkifyText = (text) => {
     if (!text) return text;
@@ -435,26 +489,35 @@ export default function TodoList() {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e, overTodo) => {
+  const handleDragOver = (e, overTodo, targetColumn) => {
     e.preventDefault();
     if (!draggedItem || !overTodo || draggedItem.id === overTodo.id) return;
 
-    setDragOverIndex(overTodo.id);
+    setDragOverColumn(targetColumn);
+    setDragOverTaskId(overTodo.id);
   };
 
-  const handleDrop = (e, targetColumn, dropIndex = null) => {
+  const handleDragOverColumn = (e, targetColumn) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    setDragOverColumn(targetColumn);
+    setDragOverTaskId(null); // Hovering over empty space
+  };
+
+  const handleDrop = (e, targetColumn) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!draggedItem) return;
 
-    // Get all tasks in target column
+    // Get all tasks in target column excluding the dragged one
     const targetColumnTodos = todos.filter(t => t.column === targetColumn && t.id !== draggedItem.id);
 
-    // Determine where to insert
+    // Determine where to insert based on dragOverTaskId
     let insertIndex;
-    if (dropIndex !== null) {
-      insertIndex = targetColumnTodos.findIndex(t => t.id === dropIndex);
+    if (dragOverTaskId) {
+      insertIndex = targetColumnTodos.findIndex(t => t.id === dragOverTaskId);
       if (insertIndex === -1) insertIndex = targetColumnTodos.length;
     } else {
       insertIndex = targetColumnTodos.length; // Add to end if dropped on empty space
@@ -482,13 +545,15 @@ export default function TodoList() {
     // Clear drag state
     setDraggedItem(null);
     setDraggedFromColumn(null);
-    setDragOverIndex(null);
+    setDragOverColumn(null);
+    setDragOverTaskId(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
     setDraggedFromColumn(null);
-    setDragOverIndex(null);
+    setDragOverColumn(null);
+    setDragOverTaskId(null);
   };
 
   // Manual archive - move all completed tasks to archive
@@ -573,25 +638,30 @@ export default function TodoList() {
   const renderTodo = (todo, columnName) => {
     const isBeingCompleted = justCompleted === todo.id;
     const isCompleted = todo.column === 'completed';
+    const isDragging = draggedItem?.id === todo.id;
+    const showPlaceholder = dragOverTaskId === todo.id && !isDragging;
 
     return (
-      <div
-        key={todo.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, todo)}
-        onDragOver={(e) => handleDragOver(e, todo)}
-        onDrop={(e) => handleDrop(e, columnName, todo.id)}
-        onDragEnd={handleDragEnd}
-        className={`${
-          isBeingCompleted ? 'completion-pulse' : ''
-        } ${
-          draggedItem?.id === todo.id ? 'opacity-50 scale-95' : ''
-        } ${
-          dragOverIndex === todo.id && draggedItem?.id !== todo.id
-            ? 'ring-2 ring-purple-500 ring-offset-2'
-            : ''
-        } mb-2 transition-all duration-150`}
-      >
+      <div key={todo.id}>
+        {/* Placeholder shown when dragging over this task */}
+        {showPlaceholder && (
+          <div className="mb-2 h-16 border-2 border-dashed border-purple-400 rounded-xl bg-purple-50 bg-opacity-30 flex items-center justify-center transition-all">
+            <span className="text-xs text-purple-400 font-medium">Drop here</span>
+          </div>
+        )}
+
+        {/* Hide the actual dragged item, keep others visible */}
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, todo)}
+          onDragOver={(e) => handleDragOver(e, todo, columnName)}
+          onDragEnd={handleDragEnd}
+          className={`${
+            isBeingCompleted ? 'completion-pulse' : ''
+          } ${
+            isDragging ? 'opacity-0 h-0 overflow-hidden' : ''
+          } mb-2 transition-all duration-150`}
+        >
         <div
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
@@ -775,6 +845,7 @@ export default function TodoList() {
             )}
           </div>
         </div>
+        </div>
       </div>
     );
   };
@@ -870,7 +941,7 @@ export default function TodoList() {
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => handleDragOverColumn(e, config.name)}
                 onDrop={(e) => handleDrop(e, config.name)}
                 className={`bg-white bg-opacity-30 backdrop-blur-md border-2 ${config.border} border-opacity-50 rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-xl ${
                   draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-400 ring-opacity-60 bg-opacity-40' : ''
@@ -926,11 +997,27 @@ export default function TodoList() {
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
                   {config.todos.length === 0 ? (
-                    <div className="text-center py-12 text-xs text-purple-200 italic drop-shadow">
-                      Drop tasks here
-                    </div>
+                    <>
+                      {/* Show placeholder when dragging over empty column */}
+                      {dragOverColumn === config.name && !dragOverTaskId && (
+                        <div className="mb-2 h-16 border-2 border-dashed border-purple-400 rounded-xl bg-purple-50 bg-opacity-30 flex items-center justify-center">
+                          <span className="text-xs text-purple-400 font-medium">Drop here</span>
+                        </div>
+                      )}
+                      <div className="text-center py-12 text-xs text-purple-200 italic drop-shadow">
+                        Drop tasks here
+                      </div>
+                    </>
                   ) : (
-                    config.todos.map((todo) => renderTodo(todo, config.name))
+                    <>
+                      {config.todos.map((todo) => renderTodo(todo, config.name))}
+                      {/* Show placeholder at end when dragging over column but not over any task */}
+                      {dragOverColumn === config.name && !dragOverTaskId && (
+                        <div className="mb-2 h-16 border-2 border-dashed border-purple-400 rounded-xl bg-purple-50 bg-opacity-30 flex items-center justify-center">
+                          <span className="text-xs text-purple-400 font-medium">Drop here</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
