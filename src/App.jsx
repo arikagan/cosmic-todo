@@ -113,6 +113,9 @@ export default function TodoList() {
   const [detailModalTask, setDetailModalTask] = useState(null);
   const [subtaskInput, setSubtaskInput] = useState('');
 
+  // Drag and drop state
+  const [draggedItem, setDraggedItem] = useState(null);
+
   // Column titles stored in localStorage
   const [columnTitles, setColumnTitles] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -450,6 +453,49 @@ export default function TodoList() {
     ));
   };
 
+  // Simple drag & drop handlers
+  const onDragStart = (task) => {
+    setDraggedItem(task);
+  };
+
+  const onDragEnd = () => {
+    setDraggedItem(null);
+  };
+
+  const onDrop = (targetColumn, targetTask = null) => {
+    if (!draggedItem) return;
+
+    // Get tasks in the target column
+    const columnTasks = todos.filter(t => t.column === targetColumn);
+
+    // Remove dragged item from all tasks
+    const otherTasks = todos.filter(t => t.id !== draggedItem.id);
+
+    // Find where to insert
+    if (targetTask) {
+      // Insert before target task
+      const targetIndex = columnTasks.findIndex(t => t.id === targetTask.id);
+      const tasksBeforeTarget = columnTasks.slice(0, targetIndex);
+      const tasksAfterTarget = columnTasks.slice(targetIndex);
+
+      // Update dragged item
+      const updated = { ...draggedItem, column: targetColumn };
+
+      // Rebuild column with new order
+      const newColumnTasks = [...tasksBeforeTarget, updated, ...tasksAfterTarget];
+      const reordered = newColumnTasks.map((t, i) => ({ ...t, order: i }));
+
+      // Merge with other columns
+      setTodos([...otherTasks.filter(t => t.column !== targetColumn), ...reordered]);
+    } else {
+      // Drop at end of column
+      const updated = { ...draggedItem, column: targetColumn, order: columnTasks.length };
+      setTodos([...otherTasks, updated]);
+    }
+
+    setDraggedItem(null);
+  };
+
   // Convert URLs in text to clickable links
   const linkifyText = (text) => {
     if (!text) return text;
@@ -556,10 +602,28 @@ export default function TodoList() {
   const renderTodo = (todo) => {
     const isBeingCompleted = justCompleted === todo.id;
     const isCompleted = todo.column === 'completed';
+    const isDragging = draggedItem?.id === todo.id;
 
     return (
       <div key={todo.id} className={`${isBeingCompleted ? 'completion-pulse' : ''} mb-2`}>
         <div
+          draggable={!isCompleted}
+          onDragStart={() => onDragStart(todo)}
+          onDragEnd={onDragEnd}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (draggedItem && draggedItem.id !== todo.id) {
+              e.currentTarget.style.borderTop = '3px solid rgb(168, 85, 247)';
+            }
+          }}
+          onDragLeave={(e) => {
+            e.currentTarget.style.borderTop = '';
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.currentTarget.style.borderTop = '';
+            onDrop(todo.column, todo);
+          }}
           onClick={(e) => {
             // Don't open modal if clicking on interactive elements
             const target = e.target;
@@ -572,7 +636,11 @@ export default function TodoList() {
           }}
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all hover:shadow-lg cursor-pointer p-3`}
+          } shadow-md rounded-xl transition-all hover:shadow-lg p-3 ${
+            isDragging ? 'opacity-40' : ''
+          } ${
+            isCompleted ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
+          }`}
         >
           {/* Top row: checkbox + title + actions */}
           <div className="flex items-center gap-3">
@@ -721,6 +789,11 @@ export default function TodoList() {
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  onDrop(config.name);
+                }}
                 className={`bg-white bg-opacity-30 backdrop-blur-md border-2 ${config.border} border-opacity-50 rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-xl`}
               >
                 <div className="mb-3">
