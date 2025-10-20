@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, FileText } from 'lucide-react';
+import { Plus, Trash2, Check, FileText, ExternalLink } from 'lucide-react';
 
 // Shooting stars
 const ShootingStars = () => (
@@ -46,10 +46,6 @@ const CosmicDots = () => (
 );
 
 export default function TodoList() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
   // Load todos from localStorage on initial render with migration from old format
   const [todos, setTodos] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -121,8 +117,6 @@ export default function TodoList() {
   const [noteInput, setNoteInput] = useState('');
   const [editingTitle, setEditingTitle] = useState(null);
   const [titleInput, setTitleInput] = useState('');
-  const [editingColumnTitle, setEditingColumnTitle] = useState(null);
-  const [columnTitleInput, setColumnTitleInput] = useState('');
   const [showArchive, setShowArchive] = useState(false);
 
   // Column titles stored in localStorage
@@ -359,30 +353,12 @@ export default function TodoList() {
     }
   }, [todos]);
 
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (passwordInput.trim() === 'fasterprogress1') {
-      setIsAuthenticated(true);
-    } else {
-      alert('Incorrect password!');
-      setPasswordInput('');
-    }
-  };
-
-  const handleUnlockClick = () => {
-    if (passwordInput.trim() === 'fasterprogress1') {
-      setIsAuthenticated(true);
-    } else {
-      alert('Incorrect password!');
-      setPasswordInput('');
-    }
-  };
 
   const addTodo = () => {
     if (inputValue.trim()) {
-      // Find the highest order in the inbox column
+      // Find the lowest order in the inbox column to add new task at top
       const inboxTodos = todos.filter(t => t.column === 'inbox');
-      const maxOrder = inboxTodos.length > 0 ? Math.max(...inboxTodos.map(t => t.order || 0)) : -1;
+      const minOrder = inboxTodos.length > 0 ? Math.min(...inboxTodos.map(t => t.order || 0)) : 0;
 
       // Add new task at the top (lowest order number)
       const newTodo = {
@@ -390,7 +366,7 @@ export default function TodoList() {
         text: inputValue,
         column: 'inbox', // New tasks start in inbox
         notes: '',
-        order: maxOrder + 1
+        order: minOrder - 1
       };
 
       setTodos([newTodo, ...todos]);
@@ -555,13 +531,6 @@ export default function TodoList() {
     setDragOverIndex(null);
   };
 
-  const updateColumnTitle = (columnName, newTitle) => {
-    setColumnTitles({
-      ...columnTitles,
-      [columnName]: newTitle
-    });
-  };
-
   // Manual archive - move all completed tasks to archive
   const archiveCompleted = () => {
     const completedTasks = todos.filter(t => t.column === 'completed');
@@ -667,7 +636,7 @@ export default function TodoList() {
         <div
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } hover:border-purple-400 hover:border-opacity-80 hover:shadow-lg shadow-md rounded-xl transition-all cursor-move hover:bg-opacity-100`}
+          } shadow-md rounded-xl transition-all cursor-move`}
         >
           {/* Main content area */}
           <div className="p-3">
@@ -683,7 +652,7 @@ export default function TodoList() {
                 className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                   isCompleted
                     ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
-                    : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+                    : 'border-purple-300'
                 }`}
               >
                 {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
@@ -720,7 +689,7 @@ export default function TodoList() {
                 ) : (
                   <div
                     className={`text-sm font-semibold leading-snug cursor-pointer ${
-                      isCompleted ? 'line-through text-gray-400' : 'text-gray-800 hover:text-purple-600'
+                      isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -753,7 +722,7 @@ export default function TodoList() {
                       setNoteInput('');
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
-                    className="text-gray-300 hover:text-purple-400 transition-colors"
+                    className="text-gray-300 transition-colors"
                     title="Add note"
                   >
                     <FileText size={14} className="opacity-50" />
@@ -767,7 +736,7 @@ export default function TodoList() {
                     deleteTodo(todo.id);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="text-gray-300 hover:text-red-500 transition-colors"
+                  className="text-gray-300 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -780,7 +749,7 @@ export default function TodoList() {
                 {todo.notes.length <= 100 ? (
                   // Short notes: show inline
                   <div
-                    className="text-xs text-gray-600 leading-relaxed cursor-pointer hover:text-purple-600 transition-colors"
+                    className="text-xs text-gray-600 leading-relaxed cursor-pointer transition-colors"
                     onClick={() => {
                       setEditingNote(todo.id);
                       setNoteInput(todo.notes);
@@ -801,7 +770,7 @@ export default function TodoList() {
                     </button>
                     {expandedTask === todo.id && (
                       <div
-                        className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2.5 rounded cursor-pointer hover:bg-opacity-70 transition-all"
+                        className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-purple-50 bg-opacity-50 p-2.5 rounded cursor-pointer transition-all"
                         onClick={() => {
                           setEditingNote(todo.id);
                           setNoteInput(todo.notes);
@@ -836,14 +805,11 @@ export default function TodoList() {
                       setEditingNote(null);
                     }
                   }}
-                  placeholder="Add notes, links, or context... (⌘+Enter to save, Esc to cancel)"
+                  placeholder="Add notes, links, or context..."
                   className="w-full px-2.5 py-2 border border-purple-300 border-opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs resize-none bg-white bg-opacity-95 leading-relaxed"
                   rows="3"
                   autoFocus
                 />
-                <div className="text-xs text-gray-400 mt-1.5">
-                  ⌘+Enter to save • Esc to cancel
-                </div>
               </div>
             )}
           </div>
@@ -851,68 +817,6 @@ export default function TodoList() {
       </div>
     );
   };
-
-  // Password screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 flex items-center justify-center px-4">
-        <CosmicDots />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '8s'}}></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '10s'}}></div>
-
-        <div className="bg-white bg-opacity-98 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-purple-200 border-opacity-50 max-w-md w-full relative z-10">
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-4 float-animation">
-              <svg width="80" height="80" viewBox="0 0 100 100" className="opacity-80">
-                <defs>
-                  <linearGradient id="lockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{stopColor: '#818CF8', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#C084FC', stopOpacity: 1}} />
-                  </linearGradient>
-                </defs>
-                <rect x="30" y="45" width="40" height="35" rx="5" fill="url(#lockGradient)" opacity="0.8"/>
-                <path d="M 35 45 L 35 35 Q 35 20 50 20 Q 65 20 65 35 L 65 45" fill="none" stroke="url(#lockGradient)" strokeWidth="6" opacity="0.8"/>
-                <circle cx="50" cy="62" r="4" fill="white" opacity="0.8"/>
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-2">
-              Enter Password
-            </h1>
-            <p className="text-sm text-gray-500 italic font-light">
-              Protected cosmic space
-            </p>
-          </div>
-
-          <form onSubmit={handlePasswordSubmit}>
-            <div className="relative mb-4">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Password"
-                className="w-full px-5 py-3 border-2 border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm pr-24"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-purple-600 hover:text-purple-800 font-medium"
-              >
-                {showPassword ? '👁️ Hide' : '👁️ Show'}
-              </button>
-            </div>
-            <button
-              type="submit"
-              onClick={handleUnlockClick}
-              className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white px-7 py-3 rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              Unlock
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-8 px-4 relative overflow-hidden">
@@ -993,7 +897,7 @@ export default function TodoList() {
             />
             <button
               onClick={addTodo}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg"
             >
               <Plus size={18} />
               Add
@@ -1011,42 +915,22 @@ export default function TodoList() {
                   draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-400 ring-opacity-60 bg-opacity-40' : ''
                 }`}
               >
-                {editingColumnTitle === config.name ? (
-                  <input
-                    type="text"
-                    value={columnTitleInput}
-                    onChange={(e) => setColumnTitleInput(e.target.value)}
-                    onBlur={() => {
-                      if (columnTitleInput.trim()) {
-                        updateColumnTitle(config.name, columnTitleInput);
-                      }
-                      setEditingColumnTitle(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        if (columnTitleInput.trim()) {
-                          updateColumnTitle(config.name, columnTitleInput);
-                        }
-                        setEditingColumnTitle(null);
-                      }
-                      if (e.key === 'Escape') {
-                        setEditingColumnTitle(null);
-                      }
-                    }}
-                    className="text-sm font-bold text-gray-700 mb-3 px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 w-full"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="mb-3">
-                    <h2
-                      className="text-sm font-bold text-white drop-shadow-md flex items-center gap-2 cursor-pointer hover:text-purple-200 transition-colors"
-                      onClick={() => {
-                        setEditingColumnTitle(config.name);
-                        setColumnTitleInput(config.title);
-                      }}
-                    >
+                <div className="mb-3">
+                    <h2 className="text-sm font-bold text-white drop-shadow-md flex items-center gap-2">
                       <span>{config.title}</span>
                       <span className="text-xs font-normal text-purple-200">({config.todos.length})</span>
+                      {/* Duckbill link icon */}
+                      {config.name === 'duckbill' && (
+                        <a
+                          href="https://app.getduckbill.com/app/home"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-200 hover:text-white transition-colors"
+                          title="Open Duckbill"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
                     </h2>
 
                     {/* Archive controls - only show for completed column */}
@@ -1078,7 +962,6 @@ export default function TodoList() {
                       </div>
                     )}
                   </div>
-                )}
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
                   {config.todos.length === 0 ? (
