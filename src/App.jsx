@@ -647,15 +647,18 @@ export default function TodoList() {
 
         {/* Hide the actual dragged item, keep others visible */}
         <div
-          draggable
+          draggable={!isCompleted}
           onDragStart={(e) => handleDragStart(e, todo)}
           onDragOver={(e) => handleDragOver(e, todo, columnName)}
+          onDrop={(e) => handleDrop(e, columnName)}
           onDragEnd={handleDragEnd}
           onClick={(e) => {
-            // Only open modal if clicking on the card background, not interactive elements
-            if (e.target === e.currentTarget || e.target.closest('.card-content')) {
-              setDetailModalTask(todo);
+            // Don't open modal if dragging or clicking on interactive elements
+            const target = e.target;
+            if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.closest('button')) {
+              return;
             }
+            setDetailModalTask(todo);
           }}
           className={`${
             isBeingCompleted ? 'completion-pulse' : ''
@@ -664,9 +667,9 @@ export default function TodoList() {
           } mb-2 transition-all duration-150`}
         >
         <div
-          className={`card-content bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
+          className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
             isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all cursor-pointer hover:shadow-lg`}
+          } shadow-md rounded-xl transition-all cursor-move hover:shadow-lg`}
         >
           {/* Main content area */}
           <div className="p-3">
