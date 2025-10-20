@@ -435,91 +435,51 @@ export default function TodoList() {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e, overTodo, targetColumn) => {
+  const handleDragOver = (e, overTodo) => {
     e.preventDefault();
-    if (!draggedItem || !overTodo) return;
+    if (!draggedItem || !overTodo || draggedItem.id === overTodo.id) return;
 
-    // Only allow reordering within the same column
-    if (draggedItem.column === targetColumn && draggedItem.id !== overTodo.id) {
-      setDragOverIndex(overTodo.id);
-    }
+    setDragOverIndex(overTodo.id);
   };
 
-  const handleDropOnTask = (overTodo, targetColumn) => {
+  const handleDrop = (e, targetColumn, dropIndex = null) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!draggedItem) return;
 
-    const isSameColumn = draggedItem.column === targetColumn;
+    // Get all tasks in target column
+    const targetColumnTodos = todos.filter(t => t.column === targetColumn && t.id !== draggedItem.id);
 
-    if (isSameColumn) {
-      // Reordering within the same column
-      const columnTodos = todos.filter(t => t.column === targetColumn);
-      const draggedIndex = columnTodos.findIndex(t => t.id === draggedItem.id);
-      const overIndex = columnTodos.findIndex(t => t.id === overTodo.id);
-
-      if (draggedIndex !== overIndex) {
-        // Reorder the tasks
-        const reordered = [...columnTodos];
-        const [removed] = reordered.splice(draggedIndex, 1);
-        reordered.splice(overIndex, 0, removed);
-
-        // Update order property
-        const reorderedWithOrder = reordered.map((todo, index) => ({
-          ...todo,
-          order: index
-        }));
-
-        // Merge with other columns
-        const otherTodos = todos.filter(t => t.column !== targetColumn);
-        setTodos([...otherTodos, ...reorderedWithOrder]);
-      }
+    // Determine where to insert
+    let insertIndex;
+    if (dropIndex !== null) {
+      insertIndex = targetColumnTodos.findIndex(t => t.id === dropIndex);
+      if (insertIndex === -1) insertIndex = targetColumnTodos.length;
     } else {
-      // Moving to a different column
-      const columnTodos = todos.filter(t => t.column === targetColumn);
-      const overIndex = columnTodos.findIndex(t => t.id === overTodo.id);
-
-      // Update the dragged todo's column and insert at the drop position
-      const updatedDraggedTodo = {
-        ...draggedItem,
-        column: targetColumn,
-        order: overIndex
-      };
-
-      // Remove from old position
-      const todosWithoutDragged = todos.filter(t => t.id !== draggedItem.id);
-
-      // Get tasks in target column and insert at position
-      const targetColumnTodos = todosWithoutDragged.filter(t => t.column === targetColumn);
-      targetColumnTodos.splice(overIndex, 0, updatedDraggedTodo);
-
-      // Reindex
-      const reindexed = targetColumnTodos.map((todo, index) => ({
-        ...todo,
-        order: index
-      }));
-
-      // Merge with other columns
-      const otherTodos = todosWithoutDragged.filter(t => t.column !== targetColumn);
-      setTodos([...otherTodos, ...reindexed]);
+      insertIndex = targetColumnTodos.length; // Add to end if dropped on empty space
     }
 
-    setDraggedItem(null);
-    setDraggedFromColumn(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDropOnColumn = (targetColumn) => {
-    if (!draggedItem) return;
-
-    // Drop on empty area of column - add to end
-    const updatedTodo = {
+    // Create updated dragged item
+    const updatedDraggedItem = {
       ...draggedItem,
       column: targetColumn
     };
 
-    setTodos(todos.map(t =>
-      t.id === draggedItem.id ? updatedTodo : t
-    ));
+    // Insert at the correct position
+    targetColumnTodos.splice(insertIndex, 0, updatedDraggedItem);
 
+    // Reindex with order property
+    const reindexed = targetColumnTodos.map((todo, index) => ({
+      ...todo,
+      order: index
+    }));
+
+    // Merge with other columns
+    const otherTodos = todos.filter(t => t.column !== targetColumn && t.id !== draggedItem.id);
+    setTodos([...otherTodos, ...reindexed]);
+
+    // Clear drag state
     setDraggedItem(null);
     setDraggedFromColumn(null);
     setDragOverIndex(null);
@@ -619,19 +579,18 @@ export default function TodoList() {
         key={todo.id}
         draggable
         onDragStart={(e) => handleDragStart(e, todo)}
-        onDragOver={(e) => handleDragOver(e, todo, columnName)}
-        onDrop={(e) => {
-          e.stopPropagation();
-          handleDropOnTask(todo, columnName);
-        }}
+        onDragOver={(e) => handleDragOver(e, todo)}
+        onDrop={(e) => handleDrop(e, columnName, todo.id)}
         onDragEnd={handleDragEnd}
         className={`${
           isBeingCompleted ? 'completion-pulse' : ''
         } ${
-          draggedItem?.id === todo.id ? 'opacity-50' : ''
+          draggedItem?.id === todo.id ? 'opacity-50 scale-95' : ''
         } ${
-          dragOverIndex === todo.id ? 'border-t-4 border-purple-500' : ''
-        } mb-2`}
+          dragOverIndex === todo.id && draggedItem?.id !== todo.id
+            ? 'ring-2 ring-purple-500 ring-offset-2'
+            : ''
+        } mb-2 transition-all duration-150`}
       >
         <div
           className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
@@ -648,7 +607,8 @@ export default function TodoList() {
                   e.stopPropagation();
                   if (!isCompleted) toggleTodo(todo.id);
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
                 className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                   isCompleted
                     ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
@@ -682,7 +642,7 @@ export default function TodoList() {
                         setEditingTitle(null);
                       }
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    draggable={false}
                     className="w-full px-2 py-1 border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm font-semibold text-gray-800"
                     autoFocus
                   />
@@ -698,7 +658,6 @@ export default function TodoList() {
                         setTitleInput(todo.text);
                       }
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {todo.text}
                   </div>
@@ -721,7 +680,8 @@ export default function TodoList() {
                       setEditingNote(todo.id);
                       setNoteInput('');
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                     className="text-gray-300 transition-colors"
                     title="Add note"
                   >
@@ -735,7 +695,8 @@ export default function TodoList() {
                     e.stopPropagation();
                     deleteTodo(todo.id);
                   }}
-                  onMouseDown={(e) => e.stopPropagation()}
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
                   className="text-gray-300 transition-colors"
                 >
                   <Trash2 size={14} />
@@ -910,7 +871,7 @@ export default function TodoList() {
               <div
                 key={config.name}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleDropOnColumn(config.name)}
+                onDrop={(e) => handleDrop(e, config.name)}
                 className={`bg-white bg-opacity-30 backdrop-blur-md border-2 ${config.border} border-opacity-50 rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-xl ${
                   draggedItem && draggedFromColumn !== config.name ? 'ring-2 ring-purple-400 ring-opacity-60 bg-opacity-40' : ''
                 }`}
