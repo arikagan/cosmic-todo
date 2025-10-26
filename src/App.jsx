@@ -634,12 +634,10 @@ export default function TodoList() {
             }
             setDetailModalTask(todo);
           }}
-          className={`bg-white bg-opacity-95 backdrop-blur-sm border-2 ${
-            isCompleted ? 'border-pink-400 border-opacity-60' : 'border-purple-300 border-opacity-50'
-          } shadow-md rounded-xl transition-all hover:shadow-lg p-3 ${
+          className={`bg-white shadow-sm rounded-2xl transition-all hover:shadow-xl hover:-translate-y-0.5 p-3.5 ${
             isDragging ? 'opacity-40' : ''
           } ${
-            isCompleted ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
+            isCompleted ? 'cursor-pointer bg-opacity-60' : 'cursor-grab active:cursor-grabbing bg-opacity-95'
           }`}
         >
           {/* Top row: checkbox + title + actions */}
@@ -650,10 +648,10 @@ export default function TodoList() {
                 e.stopPropagation();
                 if (!isCompleted) toggleTodo(todo.id);
               }}
-              className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+              className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                 isCompleted
-                  ? 'bg-gradient-to-br from-purple-400 to-pink-500 border-purple-400'
-                  : 'border-purple-300'
+                  ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-md'
+                  : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
               {(isBeingCompleted || isCompleted) && <Check size={12} className="text-white" />}
@@ -739,7 +737,7 @@ export default function TodoList() {
           </div>
         )}
 
-        <div className="bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-purple-300 border-opacity-30">
+        <div className="bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl shadow-2xl p-8">
 
           <div className="text-center mb-6">
             {/* Title with inline floating planet */}
@@ -766,18 +764,18 @@ export default function TodoList() {
             </p>
           </div>
 
-          <div className="flex gap-2 mb-6 max-w-2xl mx-auto">
+          <div className="flex gap-3 mb-6 max-w-2xl mx-auto">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What matters right now?"
-              className="flex-1 px-4 py-2 border-2 border-purple-300 border-opacity-40 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white bg-opacity-90 backdrop-blur-sm shadow-lg text-sm placeholder-purple-300"
+              className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white bg-opacity-90 shadow-md hover:shadow-lg transition-all text-sm placeholder-gray-400"
             />
             <button
               onClick={addTodo}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-105"
             >
               <Plus size={18} />
               Add
@@ -794,7 +792,7 @@ export default function TodoList() {
                   e.preventDefault();
                   onDrop(config.name);
                 }}
-                className={`bg-white bg-opacity-30 backdrop-blur-md border-2 ${config.border} border-opacity-50 rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-xl`}
+                className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-lg hover:shadow-xl`}
               >
                 <div className="mb-3">
                     <h2 className="text-sm font-bold text-white drop-shadow-md flex items-center gap-2">
@@ -816,16 +814,16 @@ export default function TodoList() {
 
                     {/* Archive controls - only show for completed column */}
                     {config.name === 'completed' && (
-                      <div className="mt-2 flex gap-1">
+                      <div className="mt-2 flex gap-2">
                         {/* Archive All button */}
                         {config.todos.length > 0 && (
                           <button
                             onClick={archiveCompleted}
-                            className="flex-1 text-xs px-2 py-1.5 bg-purple-500 bg-opacity-20 text-purple-100 rounded-lg hover:bg-opacity-30 transition-all border border-purple-400 border-opacity-40 hover:border-opacity-60 flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-3 py-2 bg-purple-500 bg-opacity-90 text-white rounded-lg hover:bg-opacity-100 hover:scale-105 transition-all shadow-md flex items-center justify-center gap-1.5 font-medium"
                             title="Archive all completed tasks"
                           >
                             <span>📦</span>
-                            <span className="font-medium">Archive ({config.todos.length})</span>
+                            <span>Archive ({config.todos.length})</span>
                           </button>
                         )}
 
@@ -833,11 +831,11 @@ export default function TodoList() {
                         {archivedTasks.length > 0 && (
                           <button
                             onClick={() => setShowArchive(true)}
-                            className="flex-1 text-xs px-2 py-1.5 bg-indigo-500 bg-opacity-20 text-purple-100 rounded-lg hover:bg-opacity-30 transition-all border border-indigo-400 border-opacity-40 hover:border-opacity-60 flex items-center justify-center gap-1"
+                            className="flex-1 text-xs px-3 py-2 bg-white bg-opacity-90 text-purple-700 rounded-lg hover:bg-opacity-100 hover:scale-105 transition-all shadow-md flex items-center justify-center gap-1.5 font-medium"
                             title="View archived tasks"
                           >
                             <span>👁️</span>
-                            <span className="font-medium">View ({archivedTasks.length})</span>
+                            <span>View ({archivedTasks.length})</span>
                           </button>
                         )}
                       </div>
@@ -858,7 +856,7 @@ export default function TodoList() {
           </div>
 
           {todos.length > 0 && (
-            <div className="mt-8 pt-6 border-t-2 border-purple-300 border-opacity-30">
+            <div className="mt-8 pt-6">
               <div className="flex items-center justify-center gap-8">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white drop-shadow-lg">
@@ -900,8 +898,8 @@ export default function TodoList() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-6 pb-4">
+                <div className="flex items-center justify-between mb-2">
                   <input
                     type="text"
                     value={detailModalTask.text}
@@ -921,10 +919,10 @@ export default function TodoList() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6">
                 {/* Notes Section */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Notes</h3>
                   <textarea
                     value={detailModalTask.notes || ''}
                     onChange={(e) => {
@@ -932,7 +930,7 @@ export default function TodoList() {
                       setDetailModalTask({ ...detailModalTask, notes: e.target.value });
                     }}
                     placeholder="Add notes, links, or context..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none min-h-[100px]"
+                    className="w-full px-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none min-h-[100px] transition-all hover:bg-gray-100"
                   />
                 </div>
 
@@ -961,10 +959,10 @@ export default function TodoList() {
                             );
                             setDetailModalTask({ ...detailModalTask, subtasks: updatedSubtasks });
                           }}
-                          className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                          className={`flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-all ${
                             subtask.completed
-                              ? 'bg-purple-500 border-purple-500'
-                              : 'border-gray-300 hover:border-purple-400'
+                              ? 'bg-purple-500 shadow-sm'
+                              : 'bg-gray-200 hover:bg-gray-300'
                           }`}
                         >
                           {subtask.completed && <Check size={10} className="text-white" />}
@@ -1006,7 +1004,7 @@ export default function TodoList() {
                         }
                       }}
                       placeholder="Add a subtask..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                      className="flex-1 px-4 py-2 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm hover:bg-gray-100 transition-all"
                     />
                     <button
                       onClick={() => {
@@ -1022,7 +1020,7 @@ export default function TodoList() {
                           setSubtaskInput('');
                         }
                       }}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 hover:scale-105 transition-all text-sm font-medium shadow-md"
                     >
                       Add
                     </button>
@@ -1031,8 +1029,8 @@ export default function TodoList() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="p-4 bg-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <label className="text-sm text-gray-600 font-medium">Move to:</label>
                   <select
                     value={detailModalTask.column}
@@ -1040,7 +1038,7 @@ export default function TodoList() {
                       moveTaskToColumn(detailModalTask.id, e.target.value);
                       setDetailModalTask({ ...detailModalTask, column: e.target.value });
                     }}
-                    className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                    className="px-3 py-2 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm shadow-sm hover:shadow-md transition-all"
                   >
                     <option value="inbox">📥 Inbox</option>
                     <option value="duckbill">🦆 Duckbill</option>
@@ -1055,7 +1053,7 @@ export default function TodoList() {
                       setDetailModalTask(null);
                     }
                   }}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all text-sm font-medium hover:scale-105"
                 >
                   Delete Task
                 </button>
@@ -1068,7 +1066,7 @@ export default function TodoList() {
         {showArchive && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 pb-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
                     📦 Archive
@@ -1095,7 +1093,7 @@ export default function TodoList() {
                     {archivedTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3"
+                        className="bg-gray-50 rounded-xl p-4 flex items-start justify-between gap-3 hover:shadow-md transition-all"
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1103,7 +1101,7 @@ export default function TodoList() {
                             <span className="text-sm text-gray-700 line-through">{task.text}</span>
                           </div>
                           {task.notes && (
-                            <div className="text-xs text-gray-500 ml-5 mt-1 bg-white p-2 rounded border border-gray-100">
+                            <div className="text-xs text-gray-500 ml-5 mt-1 bg-white p-2 rounded-lg">
                               {task.notes}
                             </div>
                           )}
@@ -1114,7 +1112,7 @@ export default function TodoList() {
                         </div>
                         <button
                           onClick={() => restoreFromArchive(task.id)}
-                          className="flex-shrink-0 text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors"
+                          className="flex-shrink-0 text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 hover:scale-105 transition-all shadow-sm font-medium"
                           title="Restore to completed"
                         >
                           ♻️ Restore
@@ -1125,10 +1123,10 @@ export default function TodoList() {
                 )}
               </div>
 
-              <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <div className="p-4 bg-gray-50">
                 <button
                   onClick={() => setShowArchive(false)}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl transition-all"
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105"
                 >
                   Close
                 </button>
