@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Check, FileText, ExternalLink } from 'lucide-react';
 
 // Shooting stars
@@ -115,6 +115,7 @@ export default function TodoList() {
 
   // Drag and drop state
   const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState(null); // Track which task we're hovering over
 
   // Column titles stored in localStorage
   const [columnTitles, setColumnTitles] = useState(() => {
@@ -455,45 +456,66 @@ export default function TodoList() {
 
   // Simple drag & drop handlers
   const onDragStart = (task) => {
+    console.log('🟢 DRAG START:', task.text, 'ID:', task.id);
     setDraggedItem(task);
   };
 
   const onDragEnd = () => {
+    console.log('🔴 DRAG END');
     setDraggedItem(null);
+    setDragOverTaskId(null);
   };
 
   const onDrop = (targetColumn, targetTask = null) => {
     if (!draggedItem) return;
 
-    // Get tasks in the target column
-    const columnTasks = todos.filter(t => t.column === targetColumn);
+    console.log('🎯 DROP:', {
+      draggedItem: draggedItem.text,
+      targetColumn,
+      targetTask: targetTask ? targetTask.text : 'end of column',
+      dragOverTaskId
+    });
 
-    // Remove dragged item from all tasks
+    // Remove dragged item from all tasks first
     const otherTasks = todos.filter(t => t.id !== draggedItem.id);
 
-    // Find where to insert
-    if (targetTask) {
+    // Get tasks in the target column (excluding the dragged item)
+    const columnTasks = otherTasks.filter(t => t.column === targetColumn);
+
+    // Update dragged item with new column
+    const updated = { ...draggedItem, column: targetColumn };
+
+    let newColumnTasks;
+    if (targetTask && targetTask.id !== draggedItem.id) {
       // Insert before target task
       const targetIndex = columnTasks.findIndex(t => t.id === targetTask.id);
-      const tasksBeforeTarget = columnTasks.slice(0, targetIndex);
-      const tasksAfterTarget = columnTasks.slice(targetIndex);
-
-      // Update dragged item
-      const updated = { ...draggedItem, column: targetColumn };
-
-      // Rebuild column with new order
-      const newColumnTasks = [...tasksBeforeTarget, updated, ...tasksAfterTarget];
-      const reordered = newColumnTasks.map((t, i) => ({ ...t, order: i }));
-
-      // Merge with other columns
-      setTodos([...otherTasks.filter(t => t.column !== targetColumn), ...reordered]);
+      console.log('📍 Inserting at index:', targetIndex, 'before:', targetTask.text);
+      if (targetIndex !== -1) {
+        newColumnTasks = [
+          ...columnTasks.slice(0, targetIndex),
+          updated,
+          ...columnTasks.slice(targetIndex)
+        ];
+      } else {
+        // Target not found, add to end
+        console.log('⚠️ Target not found, adding to end');
+        newColumnTasks = [...columnTasks, updated];
+      }
     } else {
       // Drop at end of column
-      const updated = { ...draggedItem, column: targetColumn, order: columnTasks.length };
-      setTodos([...otherTasks, updated]);
+      console.log('📍 Inserting at end of column');
+      newColumnTasks = [...columnTasks, updated];
     }
 
+    // Reindex the column tasks
+    const reordered = newColumnTasks.map((t, i) => ({ ...t, order: i }));
+
+    // Merge with other columns
+    const finalTodos = [...otherTasks.filter(t => t.column !== targetColumn), ...reordered];
+
+    setTodos(finalTodos);
     setDraggedItem(null);
+    setDragOverTaskId(null);
   };
 
   // Convert URLs in text to clickable links
@@ -599,31 +621,59 @@ export default function TodoList() {
     { name: 'completed', title: columnTitles.completed, todos: completedTodos, gradient: 'from-emerald-50 to-teal-50', border: 'border-emerald-200' },
   ];
 
+  // Render placeholder for drag preview
+  const renderPlaceholder = (todo) => {
+    return (
+      <div key={`placeholder-${todo.id}`} className="mb-2 transition-all duration-200">
+        <div className="bg-gray-300 bg-opacity-40 border-2 border-dashed border-purple-400 shadow-sm rounded-2xl p-3.5">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-300 opacity-50"></div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold leading-snug text-gray-500 opacity-70">
+                {todo.text}
+              </div>
+              {todo.subtasks && todo.subtasks.length > 0 && (
+                <div className="text-xs text-gray-400 mt-1 opacity-70">
+                  {todo.subtasks.filter(st => st.completed).length}/{todo.subtasks.length} subtasks
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {todo.notes && (
+                <FileText size={14} className="text-gray-400 opacity-50" />
+              )}
+            </div>
+          </div>
+          {todo.notes && (
+            <div className="mt-2 ml-7 text-xs text-gray-400 line-clamp-1 opacity-70">
+              {todo.notes}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderTodo = (todo) => {
     const isBeingCompleted = justCompleted === todo.id;
     const isCompleted = todo.column === 'completed';
     const isDragging = draggedItem?.id === todo.id;
 
     return (
-      <div key={todo.id} className={`${isBeingCompleted ? 'completion-pulse' : ''} mb-2`}>
+      <div
+        key={todo.id}
+        className={`${isBeingCompleted ? 'completion-pulse' : ''} mb-2`}
+        draggable={!isCompleted}
+        onDragStart={() => onDragStart(todo)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (draggedItem && draggedItem.id !== todo.id && dragOverTaskId !== todo.id) {
+            setDragOverTaskId(todo.id);
+          }
+        }}
+      >
         <div
-          draggable={!isCompleted}
-          onDragStart={() => onDragStart(todo)}
-          onDragEnd={onDragEnd}
-          onDragOver={(e) => {
-            e.preventDefault();
-            if (draggedItem && draggedItem.id !== todo.id) {
-              e.currentTarget.style.borderTop = '3px solid rgb(168, 85, 247)';
-            }
-          }}
-          onDragLeave={(e) => {
-            e.currentTarget.style.borderTop = '';
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.borderTop = '';
-            onDrop(todo.column, todo);
-          }}
           onClick={(e) => {
             // Don't open modal if clicking on interactive elements
             const target = e.target;
@@ -634,8 +684,8 @@ export default function TodoList() {
             }
             setDetailModalTask(todo);
           }}
-          className={`bg-white shadow-sm rounded-2xl transition-all hover:shadow-xl hover:-translate-y-0.5 p-3.5 ${
-            isDragging ? 'opacity-40' : ''
+          className={`bg-white shadow-sm rounded-2xl hover:shadow-xl p-3.5 ${
+            isDragging ? 'opacity-0 invisible' : ''
           } ${
             isCompleted ? 'cursor-pointer bg-opacity-60' : 'cursor-grab active:cursor-grabbing bg-opacity-95'
           }`}
@@ -648,6 +698,7 @@ export default function TodoList() {
                 e.stopPropagation();
                 if (!isCompleted) toggleTodo(todo.id);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                 isCompleted
                   ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-md'
@@ -787,15 +838,29 @@ export default function TodoList() {
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                }}
+                onDragLeave={(e) => {
+                  // Clear drag over state when leaving the column
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX;
+                  const y = e.clientY;
+                  if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                    setDragOverTaskId(null);
+                  }
+                }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  onDrop(config.name);
+                  e.stopPropagation();
+                  // Use dragOverTaskId to determine where to drop
+                  const targetTask = dragOverTaskId ? todos.find(t => t.id === dragOverTaskId) : null;
+                  onDrop(config.name, targetTask);
                 }}
                 className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-lg hover:shadow-xl`}
               >
                 <div className="mb-3">
-                    <h2 className="text-sm font-bold text-white drop-shadow-md flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-white flex items-center justify-center gap-2">
                       <span>{config.title}</span>
                       <span className="text-xs font-normal text-purple-200">({config.todos.length})</span>
                       {/* Duckbill link icon */}
@@ -843,12 +908,32 @@ export default function TodoList() {
                   </div>
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
-                  {config.todos.length === 0 ? (
+                  {config.todos.length === 0 && (!draggedItem || draggedItem.column !== config.name) ? (
                     <div className="text-center py-12 text-xs text-purple-200 italic drop-shadow">
                       No tasks yet
                     </div>
                   ) : (
-                    config.todos.map((todo) => renderTodo(todo))
+                    <>
+                      {config.todos.map((todo) => {
+                        // Show placeholder before this task if we're hovering over it
+                        const showPlaceholderBefore =
+                          draggedItem &&
+                          dragOverTaskId === todo.id &&
+                          draggedItem.id !== todo.id &&
+                          config.name === todo.column;
+
+                        return (
+                          <React.Fragment key={todo.id}>
+                            {showPlaceholderBefore && renderPlaceholder(draggedItem)}
+                            {renderTodo(todo)}
+                          </React.Fragment>
+                        );
+                      })}
+                      {/* Show placeholder at end if dragging over empty space in this column */}
+                      {draggedItem && config.todos.length === 0 && dragOverTaskId === null && (
+                        renderPlaceholder(draggedItem)
+                      )}
+                    </>
                   )}
                 </div>
               </div>
