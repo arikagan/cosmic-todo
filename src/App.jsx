@@ -1,12 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Check, FileText, ExternalLink } from 'lucide-react';
 
+// Nebula Flares with manual looping
+const NebulaFlares = () => {
+  const [animationKey, setAnimationKey] = useState(0);
+
+  useEffect(() => {
+    // Restart animations every 30 seconds (longer than any single animation)
+    const interval = setInterval(() => {
+      setAnimationKey(k => k + 1);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl nebula-flare-1" key={`flare1-${animationKey}`}></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl nebula-flare-2" key={`flare2-${animationKey}`}></div>
+      <div className="absolute top-1/2 right-10 w-64 h-64 bg-pink-500 rounded-full filter blur-3xl nebula-flare-3" key={`flare3-${animationKey}`}></div>
+      <div className="absolute top-1/3 left-10 w-80 h-80 bg-indigo-500 rounded-full filter blur-3xl nebula-flare-4" key={`flare4-${animationKey}`}></div>
+    </>
+  );
+};
+
 // Shooting stars
 const ShootingStars = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Top area */}
     <div className="shooting-star absolute top-10 right-20 w-1 h-1 bg-white rounded-full" style={{animationDelay: '0s', animationDuration: '3s'}}></div>
     <div className="shooting-star absolute top-40 right-60 w-0.5 h-0.5 bg-blue-200 rounded-full" style={{animationDelay: '5s', animationDuration: '4s'}}></div>
-    <div className="shooting-star absolute top-60 right-10 w-1 h-1 bg-purple-200 rounded-full" style={{animationDelay: '8s', animationDuration: '3.5s'}}></div>
+    <div className="shooting-star absolute top-20 left-40 w-1 h-1 bg-purple-200 rounded-full" style={{animationDelay: '2s', animationDuration: '3.5s'}}></div>
+
+    {/* Middle area */}
+    <div className="shooting-star absolute top-1/3 right-10 w-0.5 h-0.5 bg-pink-200 rounded-full" style={{animationDelay: '8s', animationDuration: '3s'}}></div>
+    <div className="shooting-star absolute top-1/2 left-20 w-1 h-1 bg-cyan-200 rounded-full" style={{animationDelay: '3s', animationDuration: '4s'}}></div>
+    <div className="shooting-star absolute top-1/2 right-1/4 w-0.5 h-0.5 bg-indigo-200 rounded-full" style={{animationDelay: '6s', animationDuration: '3.5s'}}></div>
+
+    {/* Bottom area */}
+    <div className="shooting-star absolute bottom-40 right-40 w-1 h-1 bg-yellow-100 rounded-full" style={{animationDelay: '1s', animationDuration: '3s'}}></div>
+    <div className="shooting-star absolute bottom-20 left-60 w-0.5 h-0.5 bg-purple-300 rounded-full" style={{animationDelay: '4s', animationDuration: '4s'}}></div>
+    <div className="shooting-star absolute bottom-60 right-80 w-1 h-1 bg-blue-300 rounded-full" style={{animationDelay: '7s', animationDuration: '3.5s'}}></div>
   </div>
 );
 
@@ -243,6 +277,97 @@ export default function TodoList() {
 
       .animate-pulse {
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes nebulaFlare {
+        0% {
+          opacity: 0;
+        }
+        3% {
+          opacity: 0.95;
+        }
+        40% {
+          opacity: 0.95;
+        }
+        70% {
+          opacity: 0.6;
+        }
+        85% {
+          opacity: 0.3;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      @keyframes nebulaFlareLight {
+        0% {
+          opacity: 0;
+        }
+        3% {
+          opacity: 0.75;
+        }
+        40% {
+          opacity: 0.75;
+        }
+        70% {
+          opacity: 0.45;
+        }
+        85% {
+          opacity: 0.23;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      @keyframes nebulaFlareLighter {
+        0% {
+          opacity: 0;
+        }
+        3% {
+          opacity: 0.85;
+        }
+        40% {
+          opacity: 0.85;
+        }
+        70% {
+          opacity: 0.5;
+        }
+        85% {
+          opacity: 0.25;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      .nebula-flare {
+        transition: opacity 0.1s ease;
+      }
+
+      .nebula-flare-1 {
+        animation: nebulaFlare 10s ease-out;
+        animation-delay: 0s;
+        opacity: 0;
+      }
+
+      .nebula-flare-2 {
+        animation: nebulaFlare 10s ease-out;
+        animation-delay: 6s;
+        opacity: 0;
+      }
+
+      .nebula-flare-3 {
+        animation: nebulaFlareLight 10s ease-out;
+        animation-delay: 12s;
+        opacity: 0;
+      }
+
+      .nebula-flare-4 {
+        animation: nebulaFlareLighter 10s ease-out;
+        animation-delay: 18s;
+        opacity: 0;
       }
 
       .celebrate-particle {
@@ -799,17 +924,12 @@ export default function TodoList() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-8 px-4 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-12 px-4 relative overflow-hidden">
       <CosmicDots />
       <ShootingStars />
+      <NebulaFlares />
 
-      {/* Enhanced nebula effects with more layers */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '8s'}}></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDuration: '10s', animationDelay: '2s'}}></div>
-      <div className="absolute top-1/2 right-10 w-64 h-64 bg-pink-500 rounded-full filter blur-3xl opacity-35 animate-pulse" style={{animationDuration: '12s', animationDelay: '4s'}}></div>
-      <div className="absolute top-1/3 left-10 w-80 h-80 bg-indigo-500 rounded-full filter blur-3xl opacity-30 animate-pulse" style={{animationDuration: '15s', animationDelay: '1s'}}></div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10 h-full flex flex-col">
         {/* Celebration overlay */}
         {showCelebration && (
           <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
@@ -839,11 +959,14 @@ export default function TodoList() {
           </div>
         )}
 
-        <div className="bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl shadow-2xl p-8">
+        <div className="bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl shadow-2xl p-6 h-full flex flex-col">
 
-          <div className="text-center mb-6">
+          <div className="text-center mb-4 flex-shrink-0">
             {/* Title with inline floating planet */}
             <div className="flex items-center justify-center gap-3 mb-2">
+              <h1 className="text-4xl font-bold text-white drop-shadow-lg">
+                Cosmic Tasks
+              </h1>
               <div className="float-animation">
                 <svg width="50" height="50" viewBox="0 0 100 100" className="opacity-90">
                   <defs>
@@ -857,16 +980,13 @@ export default function TodoList() {
                   <circle cx="30" cy="35" r="3" fill="white" opacity="0.6"/>
                 </svg>
               </div>
-              <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-                Cosmic Tasks
-              </h1>
             </div>
             <p className="text-sm text-purple-100 italic font-light drop-shadow">
               A small moment in an infinite universe
             </p>
           </div>
 
-          <div className="flex gap-3 mb-6 max-w-2xl mx-auto">
+          <div className="flex gap-3 mb-4 flex-shrink-0 max-w-4xl mx-auto w-full">
             <input
               type="text"
               value={inputValue}
@@ -877,7 +997,7 @@ export default function TodoList() {
             />
             <button
               onClick={addTodo}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-105"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-105 flex-shrink-0"
             >
               <Plus size={18} />
               Add
@@ -885,7 +1005,7 @@ export default function TodoList() {
           </div>
 
           {/* 4-column layout */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
@@ -913,7 +1033,7 @@ export default function TodoList() {
                   const targetTask = dragOverTaskId ? todos.find(t => t.id === dragOverTaskId) : null;
                   onDrop(config.name, targetTask);
                 }}
-                className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 h-[calc(100vh-320px)] min-h-[400px] max-h-[600px] flex flex-col transition-all shadow-lg hover:shadow-xl`}
+                className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 h-full flex flex-col transition-all shadow-lg hover:shadow-xl`}
               >
                 <div className="mb-3">
                     <h2 className="text-sm font-bold text-white flex items-center justify-center gap-2">
@@ -1058,42 +1178,6 @@ export default function TodoList() {
             ))}
           </div>
 
-          {todos.length > 0 && (
-            <div className="mt-8 pt-6">
-              <div className="flex items-center justify-center gap-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white drop-shadow-lg">
-                    {completedTodos.length}
-                  </div>
-                  <div className="text-xs text-purple-200">Completed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white drop-shadow-lg">
-                    {todos.length - completedTodos.length}
-                  </div>
-                  <div className="text-xs text-purple-200">In Progress</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white drop-shadow-lg">
-                    {todos.length}
-                  </div>
-                  <div className="text-xs text-purple-200">Total</div>
-                </div>
-
-                {completedTodos.length === todos.length && todos.length > 0 && (
-                  <div className="text-2xl animate-bounce">
-                    🎉
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-8 text-center">
-            <p className="text-xs text-purple-200 italic font-light drop-shadow">
-              Each action ripples forward through time
-            </p>
-          </div>
         </div>
 
         {/* Task Detail Modal */}
