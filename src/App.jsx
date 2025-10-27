@@ -116,6 +116,7 @@ export default function TodoList() {
   // Drag and drop state
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null); // Track which task we're hovering over
+  const [dragOverColumn, setDragOverColumn] = useState(null); // Track which column we're hovering over
 
   // Column titles stored in localStorage
   const [columnTitles, setColumnTitles] = useState(() => {
@@ -464,6 +465,7 @@ export default function TodoList() {
     console.log('🔴 DRAG END');
     setDraggedItem(null);
     setDragOverTaskId(null);
+    setDragOverColumn(null);
   };
 
   const onDrop = (targetColumn, targetTask = null) => {
@@ -668,8 +670,14 @@ export default function TodoList() {
         onDragEnd={onDragEnd}
         onDragOver={(e) => {
           e.preventDefault();
-          if (draggedItem && draggedItem.id !== todo.id && dragOverTaskId !== todo.id) {
-            setDragOverTaskId(todo.id);
+          if (draggedItem && draggedItem.id !== todo.id) {
+            if (dragOverTaskId !== todo.id) {
+              setDragOverTaskId(todo.id);
+            }
+            // Also ensure column is set when hovering over a task
+            if (dragOverColumn !== todo.column) {
+              setDragOverColumn(todo.column);
+            }
           }
         }}
       >
@@ -840,6 +848,10 @@ export default function TodoList() {
                 key={config.name}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  // Track which column we're currently over
+                  if (dragOverColumn !== config.name) {
+                    setDragOverColumn(config.name);
+                  }
                 }}
                 onDragLeave={(e) => {
                   // Clear drag over state when leaving the column
@@ -848,6 +860,7 @@ export default function TodoList() {
                   const y = e.clientY;
                   if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
                     setDragOverTaskId(null);
+                    setDragOverColumn(null);
                   }
                 }}
                 onDrop={(e) => {
@@ -907,7 +920,17 @@ export default function TodoList() {
                     )}
                   </div>
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1">
+                <div
+                  className="flex-1 overflow-y-auto overflow-x-hidden pr-1"
+                  onDragOver={(e) => {
+                    // If we're dragging over the scrollable area (not over a specific task),
+                    // clear the dragOverTaskId to show placeholder at bottom
+                    if (e.target === e.currentTarget || e.target.closest('.text-center')) {
+                      e.preventDefault();
+                      setDragOverTaskId(null);
+                    }
+                  }}
+                >
                   {config.todos.length === 0 && (!draggedItem || draggedItem.column !== config.name) ? (
                     <div className="text-center py-12 text-xs text-purple-200 italic drop-shadow">
                       No tasks yet
@@ -929,8 +952,12 @@ export default function TodoList() {
                           </React.Fragment>
                         );
                       })}
-                      {/* Show placeholder at end if dragging over empty space in this column */}
-                      {draggedItem && config.todos.length === 0 && dragOverTaskId === null && (
+                      {/* Show placeholder at end if:
+                          1. We're dragging something
+                          2. We're over this column
+                          3. We're NOT hovering over a specific task (hovering over empty space at bottom)
+                      */}
+                      {draggedItem && dragOverColumn === config.name && !dragOverTaskId && (
                         renderPlaceholder(draggedItem)
                       )}
                     </>
