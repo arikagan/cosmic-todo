@@ -1005,7 +1005,7 @@ export default function TodoList() {
           </div>
 
           {/* 4-column layout */}
-          <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+          <div className="grid grid-cols-4 gap-4 flex-1 min-h-0 overflow-hidden">
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
@@ -1033,7 +1033,7 @@ export default function TodoList() {
                   const targetTask = dragOverTaskId ? todos.find(t => t.id === dragOverTaskId) : null;
                   onDrop(config.name, targetTask);
                 }}
-                className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 h-full flex flex-col transition-all shadow-lg hover:shadow-xl`}
+                className={`bg-white bg-opacity-25 backdrop-blur-md rounded-2xl p-4 flex flex-col transition-all shadow-lg hover:shadow-xl min-h-0`}
               >
                 <div className="mb-3">
                     <h2 className="text-sm font-bold text-white flex items-center justify-center gap-2">
