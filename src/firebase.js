@@ -17,6 +17,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
 };
 
+console.log("firebaseConfig (debug)", {
+  apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.slice(0, 6) + "…" : firebaseConfig.apiKey,
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+});
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
