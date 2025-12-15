@@ -158,15 +158,17 @@ export default function TodoList() {
       const saved = localStorage.getItem('cosmicColumnTitles');
       return saved ? JSON.parse(saved) : {
         inbox: '📥 Inbox',
-        duckbill: '🦆 Duckbill',
+        upnext: '⏭️ Up Next',
         waiting: '⏳ Waiting',
+        duckbill: '🤖 Assistant',
         completed: '✅ Completed'
       };
     }
     return {
       inbox: '📥 Inbox',
-      duckbill: '🦆 Duckbill',
+      upnext: '⏭️ Up Next',
       waiting: '⏳ Waiting',
+      duckbill: '🤖 Assistant',
       completed: '✅ Completed'
     };
   });
@@ -794,14 +796,16 @@ export default function TodoList() {
 
   // Group todos by column and sort by order
   const inboxTodos = todos.filter(t => t.column === 'inbox').sort((a, b) => (a.order || 0) - (b.order || 0));
-  const duckbillTodos = todos.filter(t => t.column === 'duckbill').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const upnextTodos = todos.filter(t => t.column === 'upnext').sort((a, b) => (a.order || 0) - (b.order || 0));
   const waitingTodos = todos.filter(t => t.column === 'waiting').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const duckbillTodos = todos.filter(t => t.column === 'duckbill').sort((a, b) => (a.order || 0) - (b.order || 0));
   const completedTodos = todos.filter(t => t.column === 'completed').sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const columnConfigs = [
     { name: 'inbox', title: columnTitles.inbox, todos: inboxTodos, gradient: 'from-blue-50 to-indigo-50', border: 'border-blue-200' },
-    { name: 'duckbill', title: columnTitles.duckbill, todos: duckbillTodos, gradient: 'from-yellow-50 to-orange-50', border: 'border-yellow-200' },
+    { name: 'upnext', title: columnTitles.upnext, todos: upnextTodos, gradient: 'from-cyan-50 to-sky-50', border: 'border-cyan-200' },
     { name: 'waiting', title: columnTitles.waiting, todos: waitingTodos, gradient: 'from-purple-50 to-pink-50', border: 'border-purple-200' },
+    { name: 'duckbill', title: columnTitles.duckbill, todos: duckbillTodos, gradient: 'from-yellow-50 to-orange-50', border: 'border-yellow-200' },
     { name: 'completed', title: columnTitles.completed, todos: completedTodos, gradient: 'from-emerald-50 to-teal-50', border: 'border-emerald-200' },
   ];
 
@@ -1004,8 +1008,8 @@ export default function TodoList() {
             </button>
           </div>
 
-          {/* 4-column layout */}
-          <div className="grid grid-cols-4 gap-4 flex-1 min-h-0 overflow-hidden">
+          {/* 5-column layout */}
+          <div className="grid grid-cols-5 gap-4 flex-1 min-h-0 overflow-hidden">
             {columnConfigs.map((config) => (
               <div
                 key={config.name}
@@ -1039,14 +1043,14 @@ export default function TodoList() {
                     <h2 className="text-sm font-bold text-white flex items-center justify-center gap-2">
                       <span>{config.title}</span>
                       <span className="text-xs font-normal text-purple-200">({config.todos.length})</span>
-                      {/* Duckbill link icon */}
+                      {/* Assistant link icon */}
                       {config.name === 'duckbill' && (
                         <a
                           href="https://app.getduckbill.com/app/home"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-purple-200 hover:text-white transition-colors"
-                          title="Open Duckbill"
+                          title="Open Assistant"
                         >
                           <ExternalLink size={14} />
                         </a>
@@ -1328,8 +1332,9 @@ export default function TodoList() {
                     className="px-3 py-2 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm shadow-sm hover:shadow-md transition-all"
                   >
                     <option value="inbox">📥 Inbox</option>
-                    <option value="duckbill">🦆 Duckbill</option>
+                    <option value="upnext">⏭️ Up Next</option>
                     <option value="waiting">⏳ Waiting</option>
+                    <option value="duckbill">🤖 Assistant</option>
                     <option value="completed">✅ Completed</option>
                   </select>
                 </div>
