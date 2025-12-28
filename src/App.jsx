@@ -427,15 +427,27 @@ export default function TodoList() {
           }
         });
 
+        // Merge archived tasks (prefer Firebase data, but add any local-only items)
+        const firebaseArchived = existingData.archivedTasks || [];
+        const mergedArchived = [...firebaseArchived];
+
+        let addedArchivedCount = 0;
+        localArchivedParsed.forEach(localArchived => {
+          if (!mergedArchived.find(t => t.id === localArchived.id)) {
+            mergedArchived.push(localArchived);
+            addedArchivedCount++;
+          }
+        });
+
         await setDoc(userDocRef, {
           todos: mergedTodos,
           columnTitles: existingData.columnTitles || localColumnTitlesParsed || columnTitles,
-          archivedTasks: existingData.archivedTasks || localArchivedParsed,
+          archivedTasks: mergedArchived,
           lastModified: new Date().toISOString()
         }, { merge: true });
 
-        console.log(`✅ Merge complete: Added ${addedCount} new tasks from localStorage`);
-        console.log(`📊 Final count: ${mergedTodos.length} total tasks in Firebase`);
+        console.log(`✅ Merge complete: Added ${addedCount} new tasks and ${addedArchivedCount} archived tasks from localStorage`);
+        console.log(`📊 Final count: ${mergedTodos.length} total tasks, ${mergedArchived.length} archived tasks in Firebase`);
       } else {
         // No existing Firebase data, upload all local data
         console.log('📤 No Firebase data exists - uploading all local data');
