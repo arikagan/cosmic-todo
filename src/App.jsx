@@ -525,7 +525,7 @@ export default function TodoList() {
   // Auto-archive weekly - archive completed tasks if a Monday has passed since last archive
   useEffect(() => {
     // Wait until data is loaded from Firebase before checking
-    if (loading || typeof window === 'undefined') {
+    if (loading || typeof window === 'undefined' || !user) {
       return;
     }
 
@@ -569,20 +569,32 @@ export default function TodoList() {
           archivedReason: 'auto-weekly'
         }));
 
-        // Add to archive
-        setArchivedTasks(prev => [...prev, ...tasksToArchive]);
+        // Compute new state values
+        const newArchivedTasks = [...archivedTasks, ...tasksToArchive];
+        const newTodos = todos.filter(t => t.column !== 'completed');
 
-        // Remove from active todos
-        setTodos(prev => prev.filter(t => t.column !== 'completed'));
+        // Update local state
+        setArchivedTasks(newArchivedTasks);
+        setTodos(newTodos);
 
-        // Update last archive date only after successful archive
+        // Update last archive date FIRST to prevent re-running
         localStorage.setItem('cosmicLastArchiveDate', todayStr);
 
-        console.log('✅ Auto-archive complete!');
+        // Save to Firebase immediately
+        const userDocRef = doc(db, 'users', user.uid);
+        setDoc(userDocRef, {
+          todos: newTodos,
+          archivedTasks: newArchivedTasks,
+          lastModified: new Date().toISOString()
+        }, { merge: true }).then(() => {
+          console.log('✅ Auto-archive complete and saved to Firebase!');
+        }).catch((error) => {
+          console.error('❌ Failed to save archive to Firebase:', error);
+        });
       }
       // Don't set lastArchiveDate if no tasks - let it check again next load
     }
-  }, [loading, todos]); // Run after data loads
+  }, [loading, todos, user, archivedTasks]); // Run after data loads
 
   // Check for completion and trigger celebration
   useEffect(() => {
