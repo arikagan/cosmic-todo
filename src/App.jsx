@@ -524,67 +524,65 @@ export default function TodoList() {
 
   // Auto-archive weekly - archive completed tasks if a Monday has passed since last archive
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-
-      // Find the most recent Monday (at start of day)
-      const getMostRecentMonday = (date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = day === 0 ? 6 : day - 1; // Days since Monday (Sunday = 6 days ago)
-        d.setDate(d.getDate() - diff);
-        d.setHours(0, 0, 0, 0);
-        return d;
-      };
-
-      const mostRecentMonday = getMostRecentMonday(today);
-      const lastArchiveDateStr = localStorage.getItem('cosmicLastArchiveDate');
-
-      // Determine if we should archive:
-      // - If never archived before, archive if we're on or past Monday of this week
-      // - Otherwise, archive if the last archive was before the most recent Monday
-      let shouldArchive = false;
-      if (!lastArchiveDateStr) {
-        shouldArchive = today >= mostRecentMonday;
-      } else {
-        const lastArchiveDate = new Date(lastArchiveDateStr);
-        shouldArchive = lastArchiveDate < mostRecentMonday;
-      }
-
-      if (shouldArchive) {
-        console.log('🗓️ A Monday has passed since last archive. Checking for tasks to auto-archive...');
-
-        const completedTasks = todos.filter(t => t.column === 'completed');
-
-        if (completedTasks.length > 0) {
-          console.log(`📦 Auto-archiving ${completedTasks.length} completed tasks from last week`);
-
-          // Archive completed tasks
-          const tasksToArchive = completedTasks.map(task => ({
-            ...task,
-            archivedAt: new Date().toISOString(),
-            archivedReason: 'auto-weekly'
-          }));
-
-          // Add to archive
-          setArchivedTasks(prev => [...prev, ...tasksToArchive]);
-
-          // Remove from active todos
-          setTodos(prev => prev.filter(t => t.column !== 'completed'));
-
-          // Update last archive date
-          localStorage.setItem('cosmicLastArchiveDate', todayStr);
-
-          console.log('✅ Auto-archive complete!');
-        } else {
-          console.log('ℹ️ No completed tasks to archive');
-          // Still update the date so we don't check again until next Monday
-          localStorage.setItem('cosmicLastArchiveDate', todayStr);
-        }
-      }
+    // Wait until data is loaded from Firebase before checking
+    if (loading || typeof window === 'undefined') {
+      return;
     }
-  }, [todos]); // Run when todos change (including on initial load)
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    // Find the most recent Monday (at start of day)
+    const getMostRecentMonday = (date) => {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? 6 : day - 1; // Days since Monday (Sunday = 6 days ago)
+      d.setDate(d.getDate() - diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    const mostRecentMonday = getMostRecentMonday(today);
+    const lastArchiveDateStr = localStorage.getItem('cosmicLastArchiveDate');
+
+    // Determine if we should archive:
+    // - If never archived before, archive if we're on or past Monday of this week
+    // - Otherwise, archive if the last archive was before the most recent Monday
+    let shouldArchive = false;
+    if (!lastArchiveDateStr) {
+      shouldArchive = today >= mostRecentMonday;
+    } else {
+      const lastArchiveDate = new Date(lastArchiveDateStr);
+      shouldArchive = lastArchiveDate < mostRecentMonday;
+    }
+
+    if (shouldArchive) {
+      const completedTasks = todos.filter(t => t.column === 'completed');
+
+      if (completedTasks.length > 0) {
+        console.log(`📦 Auto-archiving ${completedTasks.length} completed tasks (Monday passed since last archive)`);
+
+        // Archive completed tasks
+        const tasksToArchive = completedTasks.map(task => ({
+          ...task,
+          archivedAt: new Date().toISOString(),
+          archivedReason: 'auto-weekly'
+        }));
+
+        // Add to archive
+        setArchivedTasks(prev => [...prev, ...tasksToArchive]);
+
+        // Remove from active todos
+        setTodos(prev => prev.filter(t => t.column !== 'completed'));
+
+        // Update last archive date only after successful archive
+        localStorage.setItem('cosmicLastArchiveDate', todayStr);
+
+        console.log('✅ Auto-archive complete!');
+      }
+      // Don't set lastArchiveDate if no tasks - let it check again next load
+    }
+  }, [loading, todos]); // Run after data loads
 
   // Check for completion and trigger celebration
   useEffect(() => {
